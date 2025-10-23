@@ -1,9 +1,10 @@
 package br.com.andrebrandao.comissoes_api.security.config;
 
-// Importações desnecessárias (AuthenticationProvider, DaoAuthenticationProvider) foram removidas
+import java.util.Arrays;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer; // Importante para o CORS
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -13,13 +14,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration; // Importe para CORS
+import org.springframework.web.cors.CorsConfigurationSource; // Importe para CORS
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource; // Importe para CORS
 
-// A injeção do CustomUserDetailsService não é mais necessária aqui
-// O Spring vai encontrá-lo sozinho
 import lombok.RequiredArgsConstructor;
 
 /**
- * Classe principal de configuração do Spring Security.
+ * Classe principal de configuração do Spring Security, incluindo CORS.
  */
 @Configuration
 @EnableWebSecurity
@@ -27,17 +29,16 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    // Agora só precisamos injetar o nosso filtro
     private final JwtAuthFilter jwtAuthFilter;
 
-    /**
-     * O "filtro" principal que define as regras de segurança HTTP.
-     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
                 .csrf(csrf -> csrf.disable())
+                // 1. HABILITANDO O CORS (usa o Bean que criaremos abaixo)
+                .cors(Customizer.withDefaults()) 
+                
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",
@@ -47,19 +48,33 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // 1. LINHA REMOVIDA: A linha .authenticationProvider(...)
-                //    foi removida daqui.
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // 2. MÉTODO REMOVIDO: O bean @Bean public AuthenticationProvider...
-    //    foi completamente removido.
+    // 2. MÉTODO BEAN ESSENCIAL PARA O CORS
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        
+        // ** AJUSTE AQUI **: URLs do seu frontend (desenvolvimento e produção)
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "https://seufrontend.com")); 
+        
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(Arrays.asList("*")); 
+        configuration.setAllowCredentials(true); 
 
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration); 
+        
+        return source;
+    }
+
+
+    // 3. MÉTODO BEAN ESSENCIAL PARA O AdminUserInitializer (O QUE CAUSOU O ERRO)
     /**
      * O Bean que o Spring usará para CRIPTOGRAFAR as senhas.
-     * O Spring vai encontrá-lo e usá-lo automaticamente.
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -67,8 +82,7 @@ public class SecurityConfig {
     }
 
     /**
-     * O Gerenciador de Autenticação. Ele será configurado automaticamente
-     * pelo Spring para usar nosso CustomUserDetailsService e PasswordEncoder.
+     * O Gerenciador de Autenticação.
      */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
