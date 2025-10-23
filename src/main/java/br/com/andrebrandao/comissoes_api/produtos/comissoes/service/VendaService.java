@@ -82,9 +82,17 @@ public class VendaService {
         return vendaRepository.save(novaVenda);
     }
 
-    // TODO: Implementar o método listar()
-    // public List<Venda> listar() {
-    //     Long empresaId = tenantService.getEmpresaIdDoUsuarioLogado();
-    //     return vendaRepository.findByEmpresaId(empresaId);
-    // }
+    /**
+     * Lista todas as Vendas pertencentes à empresa do usuário ADMIN logado.
+     * Garante a segurança Multi-Tenant.
+     *
+     * @return Lista de entidades Venda.
+     */
+    public List<Venda> listar() {
+        // 1. Pega o ID da Empresa do ADMIN logado
+        Long empresaId = tenantService.getEmpresaIdDoUsuarioLogado();
+
+        // 2. Usa o método do repositório que filtra por empresa_id
+        return vendaRepository.findByEmpresaId(empresaId);
+    }
 }
