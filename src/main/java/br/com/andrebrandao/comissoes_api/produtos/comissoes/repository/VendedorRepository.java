@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.HistoricoRendimentoDTO;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Vendedor;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.projection.VendedorComVendasProjection; // NOVO IMPORT
 
@@ -37,5 +38,16 @@ public interface VendedorRepository extends JpaRepository<Vendedor, Long> {
             "WHERE v.empresa.id = :empresaId " +
             "GROUP BY v.id, v.percentualComissao, u.id, u.nome, u.email") // Adicionar campos do User ao GROUP BY
     List<VendedorComVendasProjection> findAllWithVendasCount(Long empresaId);
-
+    
+    @Query("SELECT NEW br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.HistoricoRendimentoDTO(" + 
+       // 1. Manter a função de data que está funcionando como String
+       "FUNCTION('TO_CHAR', v.dataVenda, 'YYYY-MM'), " + 
+       // 2. Usar COALESCE para garantir que o resultado da soma não seja nulo e ajude na inferência de tipo
+       "COALESCE(SUM(v.valorVenda), 0), " + 
+       "COALESCE(SUM(v.valorComissaoCalculado), 0)) " +
+       "FROM Venda v " +
+       "WHERE v.vendedor.id = :vendedorId " +
+       "GROUP BY FUNCTION('TO_CHAR', v.dataVenda, 'YYYY-MM') " +
+       "ORDER BY FUNCTION('TO_CHAR', v.dataVenda, 'YYYY-MM') DESC")
+    List<HistoricoRendimentoDTO> findHistoricoRendimentosMensais(Long vendedorId);
 }

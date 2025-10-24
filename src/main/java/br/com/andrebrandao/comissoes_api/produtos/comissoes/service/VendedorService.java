@@ -2,7 +2,6 @@ package br.com.andrebrandao.comissoes_api.produtos.comissoes.service;
 
 import java.util.List;
 import java.util.stream.Collectors; // Import necessário
-import java.util.Optional; // Import de Optional (mantido)
 import java.math.BigDecimal;
 
 import org.apache.commons.lang3.RandomStringUtils; 
@@ -11,9 +10,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Import Transactional
 
 // --- IMPORTS OBRIGATÓRIOS ---
-import br.com.andrebrandao.comissoes_api.core.model.Empresa; 
-import br.com.andrebrandao.comissoes_api.core.repository.EmpresaRepository; 
-import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorCriadoResponseDTO; 
+import br.com.andrebrandao.comissoes_api.core.repository.EmpresaRepository;
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.HistoricoRendimentoDTO;
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorCriadoResponseDTO;
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorDetalhadoResponseDTO;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorRequestDTO; 
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorUpdateRequestDTO; 
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorResponseDTO; // <-- NOVO
@@ -154,5 +154,41 @@ public class VendedorService {
 
         // Mapeia e retorna o DTO
         return VendedorResponseDTO.fromEntity(vendedorAtualizado, qtdVendas, valorTotalVendas);
+    }
+
+    /**
+     * Busca um vendedor detalhado pelo ID, incluindo todas as métricas e histórico
+     * mensal.
+     * * @param idDoVendedor O ID do vendedor.
+     * @return O DTO VendedorDetalhadoResponseDTO.
+     */
+    @Transactional(readOnly = true)
+    public VendedorDetalhadoResponseDTO buscarDetalhesPorId(Long idDoVendedor) {
+        Long empresaId = tenantService.getEmpresaIdDoUsuarioLogado();
+        
+        // 1. Busca a entidade Vendedor (Multi-Tenant)
+        Vendedor vendedor = vendedorRepository.findByEmpresaIdAndId(empresaId, idDoVendedor)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Vendedor não encontrado com o ID: " + idDoVendedor + " para esta empresa."));
+        
+        // 2. Garante o carregamento LAZY do User associado (necessário para nome/email/dataCadastro no DTO)
+        User usuario = vendedor.getUsuario();
+        if (usuario != null) {
+            // O acesso a um campo força o carregamento do proxy LAZY dentro da transação
+            usuario.getNome(); 
+        }
+
+        // 3. Busca métricas de vendas: Contagem e Soma Total (métodos existentes)
+        Long qtdVendas = vendedorRepository.contarVendasPorVendedorId(idDoVendedor);
+        BigDecimal valorTotalVendas = vendedorRepository.somarVendasPorVendedorId(idDoVendedor);
+        if (valorTotalVendas == null) {
+             valorTotalVendas = BigDecimal.ZERO;
+        }
+
+        // 4. Busca o Histórico Mensal (Novo método do Repository)
+        List<HistoricoRendimentoDTO> historico = vendedorRepository.findHistoricoRendimentosMensais(idDoVendedor);
+
+        // 5. Mapeia e retorna (O método fromEntity calcula a média)
+        return VendedorDetalhadoResponseDTO.fromEntity(vendedor, qtdVendas, valorTotalVendas, historico);
     }
 }

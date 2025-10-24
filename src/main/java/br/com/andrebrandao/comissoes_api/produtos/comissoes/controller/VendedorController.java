@@ -14,7 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorCriadoResponseDTO; 
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorCriadoResponseDTO;
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorDetalhadoResponseDTO;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorRequestDTO; 
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorUpdateRequestDTO; 
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorResponseDTO; // <-- NOVO IMPORT
@@ -76,4 +77,16 @@ public class VendedorController {
         return vendedorService.atualizar(id, dto);
     }
 
+    // ... (Método buscarVendedorPorId)
+
+    /**
+     * Endpoint para BUSCAR DETALHES COMPLETOS de um vendedor específico pelo ID.
+     * Inclui métricas e histórico de rendimentos mensais.
+     * Mapeado para: GET /api/vendedores/{id}/detalhes
+     * @return O DTO VendedorDetalhadoResponseDTO.
+     */
+    @GetMapping("/{id}/detalhes")
+    public VendedorDetalhadoResponseDTO buscarDetalhesVendedorPorId(@PathVariable("id") Long idDoVendedor) { 
+        return vendedorService.buscarDetalhesPorId(idDoVendedor);
+    }
 }

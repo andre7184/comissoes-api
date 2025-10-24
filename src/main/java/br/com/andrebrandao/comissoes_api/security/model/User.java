@@ -1,6 +1,9 @@
 package br.com.andrebrandao.comissoes_api.security.model;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+
+import org.hibernate.annotations.CreationTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -38,6 +41,11 @@ import lombok.NoArgsConstructor;
 public class User implements UserDetails { // 4. Implementa a interface do Spring
                                            // Security
 
+
+    @CreationTimestamp // O Hibernate preenche a data/hora automaticamente
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime dataCriacao;
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
