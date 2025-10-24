@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendaRequestDTO;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Venda;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.service.VendaService;
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendaResponseDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -53,7 +54,7 @@ public class VendaController {
      * @return Uma lista de todas as vendas da empresa.
      */
     @GetMapping
-    public List<Venda> listarVendas() {
+    public List<VendaResponseDTO> listarVendas() { // ASSINATURA ALTERADA
         return vendaService.listar();
     }
 

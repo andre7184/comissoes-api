@@ -23,7 +23,8 @@ public class VendedorResponseDTO {
     // --- Dados do Vendedor ---
     private Long idVendedor;
     private BigDecimal percentualComissao;
-    private Long qtdVendas; // <-- NOVO CAMPO ADICIONADO
+    private Long qtdVendas; 
+    private BigDecimal valorTotalVendas; 
     
     // --- Dados do Usuário (User) associado ---
     private Long idUsuario;
@@ -36,7 +37,7 @@ public class VendedorResponseDTO {
      * @param qtdVendas A quantidade de vendas calculada.
      * @return O DTO preenchido.
      */
-    public static VendedorResponseDTO fromEntity(Vendedor vendedor, Long qtdVendas) { // <-- Assinatura AJUSTADA
+    public static VendedorResponseDTO fromEntity(Vendedor vendedor, Long qtdVendas, BigDecimal valorTotalVendas) { // <-- Assinatura AJUSTADA
         if (vendedor == null) {
             return null;
         }
@@ -45,8 +46,8 @@ public class VendedorResponseDTO {
         return VendedorResponseDTO.builder()
                 .idVendedor(vendedor.getId())
                 .percentualComissao(vendedor.getPercentualComissao())
-                .qtdVendas(qtdVendas) // <-- NOVO CAMPO MAPEADO
-                
+                .qtdVendas(qtdVendas) 
+                .valorTotalVendas(valorTotalVendas) 
                 .idUsuario(vendedor.getUsuario() != null ? vendedor.getUsuario().getId() : null)
                 .nome(vendedor.getUsuario() != null ? vendedor.getUsuario().getNome() : null)
                 .email(vendedor.getUsuario() != null ? vendedor.getUsuario().getEmail() : null)

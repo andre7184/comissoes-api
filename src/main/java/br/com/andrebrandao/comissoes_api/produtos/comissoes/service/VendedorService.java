@@ -3,6 +3,7 @@ package br.com.andrebrandao.comissoes_api.produtos.comissoes.service;
 import java.util.List;
 import java.util.stream.Collectors; // Import necessário
 import java.util.Optional; // Import de Optional (mantido)
+import java.math.BigDecimal;
 
 import org.apache.commons.lang3.RandomStringUtils; 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -90,8 +91,9 @@ public class VendedorService {
         return projections.stream().map(projection -> {
             Vendedor vendedor = projection.getVendedor();
             Long qtdVendas = projection.getQtdVendas();
+            BigDecimal valorTotalVendas = projection.getValorTotalVendas();
             
-            return VendedorResponseDTO.fromEntity(vendedor, qtdVendas);
+            return VendedorResponseDTO.fromEntity(vendedor, qtdVendas, valorTotalVendas);
         }).collect(Collectors.toList());
     }
 
@@ -111,8 +113,15 @@ public class VendedorService {
         // Calcula a qtdVendas
         Long qtdVendas = vendedorRepository.contarVendasPorVendedorId(vendedor.getId());
         
+        // Calcula o valor total de vendas (NOVO MÉTODO NECESSÁRIO NO REPOSITÓRIO)
+        BigDecimal valorTotalVendas = vendedorRepository.somarVendasPorVendedorId(vendedor.getId()); 
+        
+        // Trata NULL para ZERO, caso o vendedor não tenha vendas
+        if (valorTotalVendas == null) {
+             valorTotalVendas = BigDecimal.ZERO;
+        }
         // Mapeia a Entidade para o DTO
-        return VendedorResponseDTO.fromEntity(vendedor, qtdVendas);
+        return VendedorResponseDTO.fromEntity(vendedor, qtdVendas, valorTotalVendas);
     }
 
     /**
@@ -136,7 +145,14 @@ public class VendedorService {
         // Recalcula a qtdVendas para o DTO de resposta
         Long qtdVendas = vendedorRepository.contarVendasPorVendedorId(vendedorAtualizado.getId());
         
+        // Recalcula a valor total de vendas (NOVO MÉTODO NECESSÁRIO NO REPOSITÓRIO)
+        BigDecimal valorTotalVendas = vendedorRepository.somarVendasPorVendedorId(vendedorAtualizado.getId());
+        
+        if (valorTotalVendas == null) {
+             valorTotalVendas = BigDecimal.ZERO;
+        }   
+
         // Mapeia e retorna o DTO
-        return VendedorResponseDTO.fromEntity(vendedorAtualizado, qtdVendas);
+        return VendedorResponseDTO.fromEntity(vendedorAtualizado, qtdVendas, valorTotalVendas);
     }
 }

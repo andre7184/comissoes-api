@@ -14,6 +14,7 @@ import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Vendedor;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.VendaRepository;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.VendedorRepository;
 import br.com.andrebrandao.comissoes_api.security.service.TenantService; // Do Security
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendaResponseDTO;
 import jakarta.persistence.EntityNotFoundException; // Import Exception
 import lombok.RequiredArgsConstructor;
 
@@ -85,13 +86,18 @@ public class VendaService {
      * Lista todas as Vendas pertencentes à empresa do usuário ADMIN logado.
      * Garante a segurança Multi-Tenant.
      *
-     * @return Lista de entidades Venda.
+     * @return Lista de DTOs VendaResponseDTO.
      */
-    public List<Venda> listar() {
+    @Transactional(readOnly = true)
+    public List<VendaResponseDTO> listar() {
         // 1. Pega o ID da Empresa do ADMIN logado
         Long empresaId = tenantService.getEmpresaIdDoUsuarioLogado();
 
+        List<Venda> vendas = vendaRepository.findByEmpresaIdComVendedor(empresaId);
+
         // 2. Usa o método do repositório que filtra por empresa_id
-        return vendaRepository.findByEmpresaId(empresaId);
+        return vendas.stream()
+                .map(VendaResponseDTO::fromEntity)
+                .toList();
     }
 }
