@@ -38,6 +38,7 @@ public interface VendaRepository extends JpaRepository<Venda, Long> {
      */
     @Query("SELECT v FROM Venda v JOIN FETCH v.vendedor vend JOIN FETCH vend.usuario u WHERE v.empresa.id = :empresaId")
     List<Venda> findByEmpresaIdComVendedor(Long empresaId);
+    
     // TODO: Adicionar métodos com filtros de data (findByEmpresaIdAndDataVendaBetween)
     // quando formos fazer os relatórios.
 

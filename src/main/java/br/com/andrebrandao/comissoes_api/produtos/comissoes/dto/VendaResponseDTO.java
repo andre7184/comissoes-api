@@ -16,10 +16,7 @@ public class VendaResponseDTO {
     private BigDecimal valorVenda;
     private BigDecimal valorComissaoCalculado;
     private LocalDateTime dataVenda;
-
-    // Campos solicitados
-    private Long idVendedor; 
-    private String nomeVendedor; 
+    private VendedorSimplesDTO vendedor;
 
     // Método estático para conversão
     public static VendaResponseDTO fromEntity(Venda venda) {
@@ -28,10 +25,7 @@ public class VendaResponseDTO {
                 .valorVenda(venda.getValorVenda())
                 .valorComissaoCalculado(venda.getValorComissaoCalculado())
                 .dataVenda(venda.getDataVenda())
-                // Acessa o Vendedor, que deve ser carregado via JOIN FETCH no Service
-                .idVendedor(venda.getVendedor() != null ? venda.getVendedor().getId() : null)
-                .nomeVendedor(venda.getVendedor() != null && venda.getVendedor().getUsuario() != null ?
-                        venda.getVendedor().getUsuario().getNome() : "Vendedor Desconhecido")
+                .vendedor(VendedorSimplesDTO.fromEntity(venda.getVendedor()))
                 .build();
     }
 }
