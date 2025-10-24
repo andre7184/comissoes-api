@@ -1,3 +1,4 @@
+// src/main/java/br/com.andrebrandao.comissoes_api/produtos/comissoes/controller/VendaController.java
 package br.com.andrebrandao.comissoes_api.produtos.comissoes.controller;
 
 import java.util.List;
@@ -22,12 +23,15 @@ import lombok.RequiredArgsConstructor;
  * Protegido para ROLE_ADMIN e requer o módulo COMISSOES_CORE ativo.
  */
 @RestController
-@RequestMapping("/api/vendas") // 1. URL base para vendas
-@PreAuthorize("hasAuthority('ROLE_ADMIN') and principal.empresa.modulosAtivos.contains('COMISSOES_CORE')") // 2. Segurança!
+@RequestMapping("/api/vendas") // URL base para vendas
 @RequiredArgsConstructor
+// --- ANOTAÇÃO @PreAuthorize ATUALIZADA ---
+// Verifica o ROLE_ADMIN e chama o serviço 'customSecurityService' para verificar o módulo
+// Use a chave exata do seu módulo (COMISSAO_CORE ou COMISSOES_CORE)
+@PreAuthorize("hasAuthority('ROLE_ADMIN') and @customSecurityService.hasModulo(authentication, 'COMISSAO_CORE')") 
 public class VendaController {
 
-    private final VendaService vendaService; // 3. Injeta o serviço de lógica
+    private final VendaService vendaService; // Injeta o serviço de lógica
 
     /**
      * Endpoint para LANÇAR uma nova venda para um vendedor.
@@ -39,7 +43,6 @@ public class VendaController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Venda lancarNovaVenda(@Valid @RequestBody VendaRequestDTO dto) {
-        // 4. @Valid: Dispara a validação @Positive do valorVenda
         return vendaService.lancar(dto);
     }
 

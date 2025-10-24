@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.andrebrandao.comissoes_api.core.dto.AtualizarModulosEmpresaRequestDTO;
 import br.com.andrebrandao.comissoes_api.core.dto.EmpresaRequestDTO;
+import br.com.andrebrandao.comissoes_api.core.dto.EmpresaUpdateRequestDTO;
 import br.com.andrebrandao.comissoes_api.core.model.Empresa;
 import br.com.andrebrandao.comissoes_api.core.service.EmpresaService;
 import jakarta.validation.Valid;
@@ -78,8 +79,10 @@ public class SuperAdminEmpresaController {
      * @param dto Os novos dados (JSON) vindos do "body".
      * @return A empresa já atualizada.
      */
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     @PutMapping("/{id}")
-    public Empresa atualizarEmpresa(@PathVariable Long id, @Valid @RequestBody EmpresaRequestDTO dto) {
+    public Empresa atualizarEmpresa(@PathVariable Long id, 
+        @Valid @RequestBody EmpresaUpdateRequestDTO dto) {
         return empresaService.atualizar(id, dto);
     }
 
@@ -92,6 +95,7 @@ public class SuperAdminEmpresaController {
      * @param dto O JSON vindo do "body" (ex: { "moduloIds": [1, 3] })
      * @return A entidade Empresa atualizada (com a nova lista de módulos).
      */
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     @PutMapping("/{id}/modulos") // 1. Define a sub-rota
     public Empresa atualizarModulosDaEmpresa(
             @PathVariable Long id, // 2. Pega o ID da empresa da URL

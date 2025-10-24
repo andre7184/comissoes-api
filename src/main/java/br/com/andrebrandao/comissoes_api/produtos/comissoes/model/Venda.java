@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import br.com.andrebrandao.comissoes_api.core.model.Empresa; // 1. Importa do Módulo Core
+import com.fasterxml.jackson.annotation.JsonIgnore; // NOVO IMPORT
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -51,11 +52,13 @@ public class Venda {
 
     @ManyToOne(fetch = FetchType.LAZY) // 3. Muitas Vendas pertencem a UM Vendedor
     @JoinColumn(name = "vendedor_id", nullable = false)
+    @JsonIgnore // <-- ADICIONADO: Ignora na serialização para resolver o erro LAZY.
     private Vendedor vendedor;
 
     @ManyToOne(fetch = FetchType.LAZY) // 4. Muitas Vendas pertencem a UMA Empresa
     @JoinColumn(name = "empresa_id", nullable = false) // 5. Redundante, mas ESSENCIAL
                                                       // para Multi-Tenancy
+    @JsonIgnore // <-- ADICIONADO: Ignora na serialização para resolver o erro LAZY.
     private Empresa empresa;
 
 }

@@ -7,7 +7,6 @@ import java.util.List; // Importar List
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import br.com.andrebrandao.comissoes_api.core.model.Empresa; // Do Core
 import br.com.andrebrandao.comissoes_api.core.repository.EmpresaRepository; // Do Core
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendaRequestDTO;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Venda;

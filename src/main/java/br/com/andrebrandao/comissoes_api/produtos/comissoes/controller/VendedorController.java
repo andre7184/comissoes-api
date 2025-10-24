@@ -1,22 +1,25 @@
+// src/main/java/br/com.andrebrandao.comissoes_api/produtos/comissoes/controller/VendedorController.java
 package br.com.andrebrandao.comissoes_api.produtos.comissoes.controller;
 
-import java.util.List; // Importar List
+import java.util.List; 
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable; // Importar PathVariable
+import org.springframework.web.bind.annotation.PathVariable; 
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping; // Importar PutMapping
+import org.springframework.web.bind.annotation.PutMapping; 
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorCriadoResponseDTO; // DTO de Resposta da Criação
-import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorRequestDTO; // DTO de Requisição da Criação
-import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorUpdateRequestDTO; // DTO de Requisição da Atualização
-import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Vendedor; // Importar Vendedor
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorCriadoResponseDTO; 
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorRequestDTO; 
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorUpdateRequestDTO; 
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorResponseDTO; // <-- NOVO IMPORT
+// import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Vendedor; // Não é mais o retorno
+
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.service.VendedorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,17 +30,17 @@ import lombok.RequiredArgsConstructor;
  */
 @RestController
 @RequestMapping("/api/vendedores") // URL base para vendedores
-@PreAuthorize("hasAuthority('ROLE_ADMIN') and principal.empresa.modulosAtivos.contains('COMISSOES_CORE')") // Segurança!
 @RequiredArgsConstructor
+// --- ANOTAÇÃO @PreAuthorize ATUALIZADA ---
+// Verifica o ROLE_ADMIN e chama o serviço 'customSecurityService' para verificar o módulo
+// Use a chave exata do seu módulo (COMISSAO_CORE ou COMISSOES_CORE)
+@PreAuthorize("hasAuthority('ROLE_ADMIN') and @customSecurityService.hasModulo(authentication, 'COMISSAO_CORE')") 
 public class VendedorController {
 
     private final VendedorService vendedorService; // Injeta o serviço
 
     /**
      * Endpoint para CRIAR um novo vendedor (e seu usuário associado).
-     * Mapeado para: POST /api/vendedores
-     *
-     * @param dto O JSON com nome, email e percentual (VendedorRequestDTO).
      * @return O DTO com os dados do vendedor criado E a senha temporária.
      */
     @PostMapping
@@ -48,42 +51,29 @@ public class VendedorController {
 
     /**
      * Endpoint para LISTAR TODOS os vendedores da empresa do ADMIN logado.
-     * Mapeado para: GET /api/vendedores
-     * A segurança (@PreAuthorize) já está definida no nível da classe.
-     *
-     * @return Uma lista de todos os vendedores da empresa.
+     * @return Uma lista de DTOs VendedorResponseDTO.
      */
     @GetMapping
-    public List<Vendedor> listarVendedores() {
+    public List<VendedorResponseDTO> listarVendedores() { // <-- TIPO DE RETORNO ALTERADO
         return vendedorService.listar();
     }
 
     /**
-     * Endpoint para BUSCAR UM vendedor específico pelo ID,
-     * garantindo que ele pertença à empresa do ADMIN logado.
-     * Mapeado para: GET /api/vendedores/{id}
-     * A segurança (@PreAuthorize) já está definida no nível da classe.
-     *
-     * @param id O ID do vendedor vindo da URL.
-     * @return O vendedor encontrado.
+     * Endpoint para BUSCAR UM vendedor específico pelo ID.
+     * @return O DTO VendedorResponseDTO encontrado.
      */
     @GetMapping("/{id}")
-    public Vendedor buscarVendedorPorId(@PathVariable Long id) {
+    public VendedorResponseDTO buscarVendedorPorId(@PathVariable Long id) { // <-- TIPO DE RETORNO ALTERADO
         return vendedorService.buscarPorId(id);
     }
 
     /**
      * Endpoint para ATUALIZAR o percentual de comissão de um vendedor existente.
-     * Mapeado para: PUT /api/vendedores/{id}
-     * A segurança (@PreAuthorize) já está definida no nível da classe.
-     *
-     * @param id  O ID do vendedor vindo da URL.
-     * @param dto O JSON com o novo percentual (VendedorUpdateRequestDTO).
-     * @return O vendedor atualizado.
+     * @return O DTO VendedorResponseDTO do vendedor atualizado.
      */
-    @PutMapping("/{id}") // --- MÉTODO ADICIONADO ---
-    public Vendedor atualizarVendedor(@PathVariable Long id, @Valid @RequestBody VendedorUpdateRequestDTO dto) {
+    @PutMapping("/{id}") 
+    public VendedorResponseDTO atualizarVendedor(@PathVariable Long id, @Valid @RequestBody VendedorUpdateRequestDTO dto) { // <-- TIPO DE RETORNO ALTERADO
         return vendedorService.atualizar(id, dto);
     }
 
-} // --- FIM DA CLASSE (A chave extra foi removida) ---
+}

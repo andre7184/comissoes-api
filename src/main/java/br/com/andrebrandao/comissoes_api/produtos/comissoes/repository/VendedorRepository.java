@@ -1,41 +1,32 @@
 package br.com.andrebrandao.comissoes_api.produtos.comissoes.repository;
 
-import java.util.List;
-import java.util.Optional; // 1. Importar Optional
-
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Vendedor;
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.projection.VendedorComVendasProjection; // NOVO IMPORT
 
-/**
- * Repositório para a entidade Vendedor.
- */
+import java.util.List;
+import java.util.Optional;
+
+@Repository
 public interface VendedorRepository extends JpaRepository<Vendedor, Long> {
 
-    /**
-     * Busca todos os Vendedores que pertencem a uma Empresa específica.
-     * Essencial para a lógica Multi-Tenant (um admin só vê seus vendedores).
-     * Query Mágica: "SELECT * FROM vendedor WHERE empresa_id = ?"
-     *
-     * @param empresaId O ID da Empresa.
-     * @return Lista de Vendedores.
-     */
     List<Vendedor> findByEmpresaId(Long empresaId);
-
-    /**
-     * Busca um Vendedor específico pelo seu ID *E* pelo ID da Empresa.
-     * Garante que um admin não possa buscar um vendedor de outra empresa
-     * mesmo que saiba o ID do vendedor.
-     * Query Mágica: "SELECT * FROM vendedor WHERE empresa_id = ? AND id = ?"
-     *
-     * @param empresaId O ID da Empresa.
-     * @param id        O ID do Vendedor.
-     * @return um Optional contendo o Vendedor (se encontrado para aquela empresa)
-     * ou vazio.
-     */
     Optional<Vendedor> findByEmpresaIdAndId(Long empresaId, Long id);
 
-    // TODO: Adicionar um método findByUsuarioId(Long usuarioId) se necessário
-    // para o RelatorioVendedorController
+    // Contagem para busca individual/atualização
+    @Query("SELECT COUNT(v) FROM Venda v WHERE v.vendedor.id = :vendedorId")
+    Long contarVendasPorVendedorId(Long vendedorId);
+
+    // Consulta OTIMIZADA para listagem (resolve N+1)
+    @Query("SELECT NEW br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.projection.VendedorComVendasProjection(v, COUNT(vn.id)) " +
+           "FROM Vendedor v " +
+           "LEFT JOIN v.usuario u " + 
+           "LEFT JOIN Venda vn ON vn.vendedor = v " +
+           "WHERE v.empresa.id = :empresaId " +
+           "GROUP BY v.id, v.percentualComissao, u.id, u.nome, u.email") // Adicionar campos do User ao GROUP BY
+    List<VendedorComVendasProjection> findAllWithVendasCount(Long empresaId);
 
 }

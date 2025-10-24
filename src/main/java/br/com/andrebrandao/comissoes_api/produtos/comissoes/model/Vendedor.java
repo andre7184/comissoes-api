@@ -2,8 +2,9 @@ package br.com.andrebrandao.comissoes_api.produtos.comissoes.model;
 
 import java.math.BigDecimal;
 
-import br.com.andrebrandao.comissoes_api.core.model.Empresa; // 1. Importa do Módulo Core
-import br.com.andrebrandao.comissoes_api.security.model.User; // 2. Importa do Módulo Security
+import br.com.andrebrandao.comissoes_api.core.model.Empresa;
+import br.com.andrebrandao.comissoes_api.security.model.User;
+import com.fasterxml.jackson.annotation.JsonIgnore; // Import mantido
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -39,16 +40,15 @@ public class Vendedor {
     private BigDecimal percentualComissao;
 
     // --- LIGAÇÃO MULTI-TENANT ---
-    @ManyToOne(fetch = FetchType.LAZY) // 3. Muitos Vendedores pertencem a UMA Empresa
+    @ManyToOne(fetch = FetchType.LAZY) 
     @JoinColumn(name = "empresa_id", nullable = false)
+    @JsonIgnore // <-- MANTIDO: Evita erro de serialização do campo Lazy e não solicitado.
     private Empresa empresa;
 
     // --- LIGAÇÃO COM O LOGIN ---
-    @OneToOne(fetch = FetchType.LAZY) // 4. Um Vendedor está associado a UM User
-    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true) // 5. Cria a FK
-                                                                                               // `user_id` e
-                                                                                               // garante que
-                                                                                               // seja única
+    @OneToOne(fetch = FetchType.LAZY) 
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)
+    // @JsonIgnore <-- REMOVIDO: O relacionamento precisa ser acessado dentro da transação para popular o DTO.
     private User usuario;
 
     // TODO: Adicionar outros campos se necessário (ex: nome completo, CPF,

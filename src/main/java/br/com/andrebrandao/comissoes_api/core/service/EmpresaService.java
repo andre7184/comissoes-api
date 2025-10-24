@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Import mais importante!
 
 import br.com.andrebrandao.comissoes_api.core.dto.EmpresaRequestDTO;
+import br.com.andrebrandao.comissoes_api.core.dto.EmpresaUpdateRequestDTO;
 import br.com.andrebrandao.comissoes_api.core.model.Empresa;
 import br.com.andrebrandao.comissoes_api.core.model.Modulo;
 import br.com.andrebrandao.comissoes_api.core.repository.EmpresaRepository;
@@ -90,9 +91,7 @@ public class EmpresaService {
     }
 
     
-    public Empresa atualizar(Long id, EmpresaRequestDTO dto) {
-        // O método 'atualizar' agora só atualiza os dados da empresa.
-        // A atualização de admin/senha deve ser um processo separado.
+    public Empresa atualizar(Long id, EmpresaUpdateRequestDTO dto) {
         Empresa empresaExistente = buscarPorId(id);
         empresaExistente.setNomeFantasia(dto.getNomeFantasia());
         empresaExistente.setCnpj(dto.getCnpj());

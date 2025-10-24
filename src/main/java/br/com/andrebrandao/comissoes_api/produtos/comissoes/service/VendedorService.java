@@ -1,25 +1,30 @@
 package br.com.andrebrandao.comissoes_api.produtos.comissoes.service;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors; // Import necessário
+import java.util.Optional; // Import de Optional (mantido)
 
-import org.apache.commons.lang3.RandomStringUtils; // Import para gerar senha
+import org.apache.commons.lang3.RandomStringUtils; 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Import Transactional
 
-import br.com.andrebrandao.comissoes_api.core.model.Empresa; // Do Core
-import br.com.andrebrandao.comissoes_api.core.repository.EmpresaRepository; // Do Core (necessário para getReferenceById)
-import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorCriadoResponseDTO; // DTO de Resposta da Criação
-import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorRequestDTO; // DTO de Requisição da Criação
-import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorUpdateRequestDTO; // DTO de Requisição da Atualização
+// --- IMPORTS OBRIGATÓRIOS ---
+import br.com.andrebrandao.comissoes_api.core.model.Empresa; 
+import br.com.andrebrandao.comissoes_api.core.repository.EmpresaRepository; 
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorCriadoResponseDTO; 
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorRequestDTO; 
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorUpdateRequestDTO; 
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorResponseDTO; // <-- NOVO
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Vendedor;
-import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.VendedorRepository;
-import br.com.andrebrandao.comissoes_api.security.model.Role; // Do Security
-import br.com.andrebrandao.comissoes_api.security.model.User; // Do Security
-import br.com.andrebrandao.comissoes_api.security.repository.UserRepository; // Do Security
-import br.com.andrebrandao.comissoes_api.security.service.TenantService; // Do Security
-import jakarta.persistence.EntityNotFoundException; // Import Exception
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.VendedorRepository; // <-- Necessário
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.projection.VendedorComVendasProjection; // <-- NOVO
+import br.com.andrebrandao.comissoes_api.security.model.Role; 
+import br.com.andrebrandao.comissoes_api.security.model.User; 
+import br.com.andrebrandao.comissoes_api.security.repository.UserRepository; 
+import br.com.andrebrandao.comissoes_api.security.service.TenantService; // <-- Necessário
+
+import jakarta.persistence.EntityNotFoundException; 
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -37,16 +42,7 @@ public class VendedorService {
     private final TenantService tenantService;
     private final EmpresaRepository empresaRepository; // Necessário para getReferenceById
 
-    /**
-     * Cria um novo Vendedor e o User associado a ele.
-     * Operação transacional: ou salva os dois, ou não salva nenhum.
-     * Garante que o Vendedor seja criado na empresa do Admin logado.
-     * Gera uma senha aleatória para o novo usuário.
-     *
-     * @param dto O DTO com os dados do vendedor (nome, email, percentual).
-     * @return O DTO de resposta com os dados do vendedor e a senha temporária gerada.
-     * @throws IllegalStateException se o email já estiver em uso.
-     */
+    // ... método criar() (Mantido, sem alteração na assinatura)
     @Transactional
     public VendedorCriadoResponseDTO criar(VendedorRequestDTO dto) {
 
@@ -77,52 +73,70 @@ public class VendedorService {
         return VendedorCriadoResponseDTO.fromEntity(vendedorSalvo, senhaGerada);
     }
 
+
     /**
-     * Lista todos os Vendedores pertencentes à empresa do usuário ADMIN logado.
-     * Garante a segurança Multi-Tenant.
+     * Lista todos os Vendedores (OTIMIZADO com Projeção).
      *
-     * @return Lista de entidades Vendedor.
+     * @return Lista de DTOs VendedorResponseDTO.
      */
-    public List<Vendedor> listar() {
+    @Transactional(readOnly = true) // <-- ADICIONADO: Mantém a sessão ativa para carregar o User
+    public List<VendedorResponseDTO> listar() { // <-- ASSINATURA ALTERADA
         Long empresaId = tenantService.getEmpresaIdDoUsuarioLogado();
-        return vendedorRepository.findByEmpresaId(empresaId);
+        
+        // 1. Chama a consulta otimizada
+        List<VendedorComVendasProjection> projections = vendedorRepository.findAllWithVendasCount(empresaId);
+        
+        // 2. Mapeia a lista de Projeções para a lista final de DTOs de Resposta
+        return projections.stream().map(projection -> {
+            Vendedor vendedor = projection.getVendedor();
+            Long qtdVendas = projection.getQtdVendas();
+            
+            return VendedorResponseDTO.fromEntity(vendedor, qtdVendas);
+        }).collect(Collectors.toList());
     }
 
     /**
-     * Busca um Vendedor específico pelo seu ID, mas APENAS se ele pertencer
-     * à empresa do usuário ADMIN logado.
-     * Garante a segurança Multi-Tenant.
+     * Busca um Vendedor específico pelo seu ID.
      *
      * @param idDoVendedor O ID do Vendedor a ser buscado.
-     * @return A entidade Vendedor.
-     * @throws EntityNotFoundException se o vendedor não for encontrado *para esta empresa*.
+     * @return O DTO VendedorResponseDTO.
      */
-    public Vendedor buscarPorId(Long idDoVendedor) {
+    @Transactional(readOnly = true) // <-- ADICIONADO: Mantém a sessão ativa para carregar o User
+    public VendedorResponseDTO buscarPorId(Long idDoVendedor) { // <-- ASSINATURA ALTERADA
         Long empresaId = tenantService.getEmpresaIdDoUsuarioLogado();
-        return vendedorRepository.findByEmpresaIdAndId(empresaId, idDoVendedor)
+        Vendedor vendedor = vendedorRepository.findByEmpresaIdAndId(empresaId, idDoVendedor)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Vendedor não encontrado com o ID: " + idDoVendedor + " para esta empresa."));
+        
+        // Calcula a qtdVendas
+        Long qtdVendas = vendedorRepository.contarVendasPorVendedorId(vendedor.getId());
+        
+        // Mapeia a Entidade para o DTO
+        return VendedorResponseDTO.fromEntity(vendedor, qtdVendas);
     }
 
     /**
      * Atualiza o percentual de comissão de um Vendedor existente.
-     * Garante que o ADMIN só possa atualizar vendedores da sua própria empresa.
      *
      * @param idDoVendedor O ID do Vendedor a ser atualizado.
      * @param dto O DTO com o novo percentual de comissão.
-     * @return A entidade Vendedor atualizada.
-     * @throws EntityNotFoundException se o vendedor não for encontrado para esta
-     * empresa.
+     * @return O DTO VendedorResponseDTO do vendedor atualizado.
      */
-    public Vendedor atualizar(Long idDoVendedor, VendedorUpdateRequestDTO dto) {
-        // Busca o vendedor usando o método seguro (já valida empresa e existência)
-        Vendedor vendedorExistente = buscarPorId(idDoVendedor);
+    @Transactional // <-- ADICIONADO: Garante a transação para salvar e mapear
+    public VendedorResponseDTO atualizar(Long idDoVendedor, VendedorUpdateRequestDTO dto) { // <-- ASSINATURA ALTERADA
+        Long empresaId = tenantService.getEmpresaIdDoUsuarioLogado();
+        Vendedor vendedorExistente = vendedorRepository.findByEmpresaIdAndId(empresaId, idDoVendedor)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Vendedor não encontrado com o ID: " + idDoVendedor + " para esta empresa."));
 
-        // Atualiza apenas o campo permitido
         vendedorExistente.setPercentualComissao(dto.getPercentualComissao());
 
-        // Salva a entidade atualizada (JPA faz o UPDATE)
-        return vendedorRepository.save(vendedorExistente);
+        Vendedor vendedorAtualizado = vendedorRepository.save(vendedorExistente);
+        
+        // Recalcula a qtdVendas para o DTO de resposta
+        Long qtdVendas = vendedorRepository.contarVendasPorVendedorId(vendedorAtualizado.getId());
+        
+        // Mapeia e retorna o DTO
+        return VendedorResponseDTO.fromEntity(vendedorAtualizado, qtdVendas);
     }
-
-} // Fim da classe VendedorService
+}
