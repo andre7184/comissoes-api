@@ -20,6 +20,7 @@ import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorResponse
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Vendedor;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.VendedorRepository; // <-- Necessário
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.projection.VendedorComVendasProjection; // <-- NOVO
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.projection.HistoricoRendimentoProjection;
 import br.com.andrebrandao.comissoes_api.security.model.Role; 
 import br.com.andrebrandao.comissoes_api.security.model.User; 
 import br.com.andrebrandao.comissoes_api.security.repository.UserRepository; 
@@ -185,10 +186,18 @@ public class VendedorService {
              valorTotalVendas = BigDecimal.ZERO;
         }
 
-        // 4. Busca o Histórico Mensal (Novo método do Repository)
-        List<HistoricoRendimentoDTO> historico = vendedorRepository.findHistoricoRendimentosMensais(idDoVendedor);
+        // 4. Busca o Histórico Mensal (Usando a nova Projection)
+        List<HistoricoRendimentoProjection> projections = vendedorRepository.findHistoricoRendimentosMensais(idDoVendedor);
 
-        // 5. Mapeia e retorna (O método fromEntity calcula a média)
+        // 5. Mapeia a Projection para o DTO de Resposta (HistoricoRendimentoDTO)
+        List<HistoricoRendimentoDTO> historico = projections.stream()
+            .map(p -> new HistoricoRendimentoDTO(
+                p.getMesAno(),
+                p.getValorVendido(),
+                p.getValorComissao()))
+            .collect(Collectors.toList());
+
+        // 6. Mapeia e retorna (O método fromEntity calcula a média)
         return VendedorDetalhadoResponseDTO.fromEntity(vendedor, qtdVendas, valorTotalVendas, historico);
     }
 }

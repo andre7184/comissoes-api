@@ -4,10 +4,14 @@ import java.math.BigDecimal;
 import java.math.RoundingMode; // Importar RoundingMode
 import java.util.List; // Importar List
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import br.com.andrebrandao.comissoes_api.core.repository.EmpresaRepository; // Do Core
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.DashboardResponseDTO;
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.HistoricoRendimentoDTO;
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendaDetalheDTO;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendaRequestDTO;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Venda;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Vendedor;
@@ -15,6 +19,7 @@ import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.VendaRepo
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.VendedorRepository;
 import br.com.andrebrandao.comissoes_api.security.service.TenantService; // Do Security
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendaResponseDTO;
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorRankingDTO;
 import jakarta.persistence.EntityNotFoundException; // Import Exception
 import lombok.RequiredArgsConstructor;
 
@@ -99,5 +104,89 @@ public class VendaService {
         return vendas.stream()
                 .map(VendaResponseDTO::fromEntity)
                 .toList();
+    }
+
+    /**
+     * Gera o Dashboard de Vendas completo para a empresa do Admin logado (Mês Atual e Rankings).
+     * @return O DTO DashboardResponseDTO preenchido.
+     */
+    @Transactional(readOnly = true)
+    public DashboardResponseDTO gerarDashboard() {
+        Long empresaId = tenantService.getEmpresaIdDoUsuarioLogado();
+        
+        // --- 1. Busca Métricas Gerais do Mês (SQL Nativo) ---
+        List<Object[]> totaisMesResult = vendaRepository.findTotaisDoMes(empresaId);
+        
+        // Mapeamento dos resultados escalares
+        BigDecimal totalVendasMes = BigDecimal.ZERO;
+        BigDecimal totalComissoesMes = BigDecimal.ZERO;
+        Long qtdVendasMes = 0L;
+
+        if (totaisMesResult != null && !totaisMesResult.isEmpty() && totaisMesResult.get(0).length == 3) {
+            Object[] result = totaisMesResult.get(0);
+            totalVendasMes = (BigDecimal) result[0];
+            totalComissoesMes = (BigDecimal) result[1];
+            // O COUNT() no SQL nativo pode retornar um BigInteger ou Long.
+            // Para segurança, tratamos como Long.
+            if (result[2] instanceof Number) {
+                qtdVendasMes = ((Number) result[2]).longValue();
+            } else {
+                 qtdVendasMes = 0L;
+            }
+        }
+        
+        // --- 2. Calcula Média da Venda ---
+        BigDecimal mediaVendaMes = BigDecimal.ZERO;
+        if (qtdVendasMes > 0) {
+            mediaVendaMes = totalVendasMes.divide(new BigDecimal(qtdVendasMes), 2, RoundingMode.HALF_UP);
+        }
+
+        // --- 3. Ranking de Vendedores (SQL Nativo) ---
+        List<VendedorRankingDTO> rankingVendedores = vendaRepository.findRankingVendedores(empresaId).stream()
+            .map(obj -> new VendedorRankingDTO(
+                (String) obj[0], // nomeVendedor
+                (Long) obj[1],   // idVendedor
+                (BigDecimal) obj[2], // valorTotal
+                ((Number) obj[3]).longValue() // qtdVendas (CAST para Long)
+            )).toList();
+
+        // --- 4. Maiores e Últimas Vendas (HQL com JOIN FETCH) ---
+        // Usamos PageRequest para limitar os resultados (ex: top 5)
+        PageRequest limit5 = PageRequest.of(0, 5);
+        
+        List<Venda> maioresVendasEntities = vendaRepository.findMaioresVendas(empresaId, limit5);
+        List<Venda> ultimasVendasEntities = vendaRepository.findUltimasVendas(empresaId, limit5);
+        
+        // Mapeamento usando o método fromEntity do DTO
+        List<VendaDetalheDTO> maioresVendas = maioresVendasEntities.stream()
+            .map(VendaDetalheDTO::fromEntity)
+            .toList();
+            
+        List<VendaDetalheDTO> ultimasVendas = ultimasVendasEntities.stream()
+            .map(VendaDetalheDTO::fromEntity)
+            .toList();
+        
+        // --- 5. Histórico Vendas Mensal (SQL Nativo) ---
+        // Reutilizamos a query que retorna List<Object[]> e mapeamos para HistoricoRendimentoDTO
+        List<HistoricoRendimentoDTO> historicoVendasMensal = vendaRepository.findHistoricoVendasMensal(empresaId).stream()
+            .map(obj -> new HistoricoRendimentoDTO(
+                (String) obj[0],        // mesAno
+                (BigDecimal) obj[1],    // valorVendido
+                (BigDecimal) obj[2]     // valorComissao
+            ))
+            .toList();
+
+
+        // --- 6. Constrói e Retorna o DTO Principal ---
+        return DashboardResponseDTO.builder()
+                .totalVendasMes(totalVendasMes)
+                .totalComissoesMes(totalComissoesMes)
+                .qtdVendasMes(qtdVendasMes)
+                .mediaVendaMes(mediaVendaMes)
+                .rankingVendedores(rankingVendedores)
+                .maioresVendas(maioresVendas)
+                .ultimasVendas(ultimasVendas)
+                .historicoVendasMensal(historicoVendasMensal)
+                .build();
     }
 }

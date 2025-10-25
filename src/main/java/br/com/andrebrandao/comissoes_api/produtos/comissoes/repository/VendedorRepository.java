@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.HistoricoRendimentoDTO;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Vendedor;
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.projection.HistoricoRendimentoProjection;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.projection.VendedorComVendasProjection; // NOVO IMPORT
 
 import java.math.BigDecimal;
@@ -39,15 +40,19 @@ public interface VendedorRepository extends JpaRepository<Vendedor, Long> {
             "GROUP BY v.id, v.percentualComissao, u.id, u.nome, u.email") // Adicionar campos do User ao GROUP BY
     List<VendedorComVendasProjection> findAllWithVendasCount(Long empresaId);
     
-    @Query("SELECT NEW br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.HistoricoRendimentoDTO(" + 
-       // 1. Manter a função de data que está funcionando como String
-       "FUNCTION('TO_CHAR', v.dataVenda, 'YYYY-MM'), " + 
-       // 2. Usar COALESCE para garantir que o resultado da soma não seja nulo e ajude na inferência de tipo
-       "COALESCE(SUM(v.valorVenda), 0), " + 
-       "COALESCE(SUM(v.valorComissaoCalculado), 0)) " +
-       "FROM Venda v " +
-       "WHERE v.vendedor.id = :vendedorId " +
-       "GROUP BY FUNCTION('TO_CHAR', v.dataVenda, 'YYYY-MM') " +
-       "ORDER BY FUNCTION('TO_CHAR', v.dataVenda, 'YYYY-MM') DESC")
-    List<HistoricoRendimentoDTO> findHistoricoRendimentosMensais(Long vendedorId);
+    // VendedorRepository.java (Apenas a Query findHistoricoRendimentosMensais)
+    @Query(value = "SELECT " +
+           "    TO_CHAR(v.data_venda, 'YYYY-MM') AS mesAno, " + // Coluna 1
+           "    COALESCE(SUM(v.valor_venda), 0) AS valorVendido, " + // Coluna 2
+           "    COALESCE(SUM(v.valor_comissao_calculado), 0) AS valorComissao " + // Coluna 3
+           "FROM " +
+           "    venda v " +
+           "WHERE " +
+           "    v.vendedor_id = :vendedorId " +
+           "GROUP BY " +
+           "    TO_CHAR(v.data_venda, 'YYYY-MM') " +
+           "ORDER BY " +
+           "    mesAno DESC",
+           nativeQuery = true) // <--- ATENÇÃO: AGORA É SQL PURO
+    List<HistoricoRendimentoProjection> findHistoricoRendimentosMensais(Long vendedorId);
 }
