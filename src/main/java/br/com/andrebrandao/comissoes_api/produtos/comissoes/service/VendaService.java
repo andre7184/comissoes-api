@@ -141,6 +141,12 @@ public class VendaService {
             mediaVendaMes = totalVendasMes.divide(new BigDecimal(qtdVendasMes), 2, RoundingMode.HALF_UP);
         }
 
+        // --- 2.1 Calcula Média da Comissão ---  // <-- ADICIONAR ESTE BLOCO
+        BigDecimal mediaComissoesMes = BigDecimal.ZERO;
+        if (qtdVendasMes > 0) {
+            mediaComissoesMes = totalComissoesMes.divide(new BigDecimal(qtdVendasMes), 2, RoundingMode.HALF_UP);
+        }
+
         // --- 3. Ranking de Vendedores (SQL Nativo) ---
         List<VendedorRankingDTO> rankingVendedores = vendaRepository.findRankingVendedores(empresaId).stream()
             .map(obj -> new VendedorRankingDTO(
@@ -183,6 +189,7 @@ public class VendaService {
                 .totalComissoesMes(totalComissoesMes)
                 .qtdVendasMes(qtdVendasMes)
                 .mediaVendaMes(mediaVendaMes)
+                .mediaComissaoMes(mediaComissoesMes)
                 .rankingVendedores(rankingVendedores)
                 .maioresVendas(maioresVendas)
                 .ultimasVendas(ultimasVendas)

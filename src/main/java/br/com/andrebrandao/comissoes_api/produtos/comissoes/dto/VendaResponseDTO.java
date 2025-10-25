@@ -21,11 +21,11 @@ public class VendaResponseDTO {
     // Método estático para conversão
     public static VendaResponseDTO fromEntity(Venda venda) {
         return VendaResponseDTO.builder()
-                .id(venda.getId())
-                .valorVenda(venda.getValorVenda())
-                .valorComissaoCalculado(venda.getValorComissaoCalculado())
-                .dataVenda(venda.getDataVenda())
-                .vendedor(VendedorSimplesDTO.fromEntity(venda.getVendedor()))
-                .build();
+            .id(venda.getId())
+            .valorVenda(venda.getValorVenda())
+            .valorComissaoCalculado(venda.getValorComissaoCalculado())
+            .dataVenda(venda.getDataVenda())
+            .vendedor(VendedorSimplesDTO.fromEntity(venda.getVendedor()))
+            .build();
     }
 }

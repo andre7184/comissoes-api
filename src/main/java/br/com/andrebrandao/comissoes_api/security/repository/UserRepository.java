@@ -2,6 +2,8 @@ package br.com.andrebrandao.comissoes_api.security.repository;
 
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import br.com.andrebrandao.comissoes_api.security.model.Role;
 import br.com.andrebrandao.comissoes_api.security.model.User;
 
 /**
@@ -18,4 +20,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     Optional<User> findByEmail(String email);
 
+    /**
+     * Conta o número de Usuários associados a uma Empresa específica.
+     * Query Mágica: "SELECT COUNT(u) FROM User u WHERE u.empresa.id = ?"
+     * @param empresaId O ID da Empresa.
+     * @return A contagem de usuários.
+     */
+    Long countByEmpresaId(Long empresaId);
+
+    /**
+     * Conta o número de Usuários associados a uma Empresa específica E com um Role específico.
+     * Query Mágica: "SELECT COUNT(u) FROM User u WHERE u.empresa.id = ? AND u.role = ?"
+     * @param empresaId O ID da Empresa.
+     * @param role O Role a ser contado (ex: Role.ROLE_ADMIN).
+     * @return A contagem de usuários com esse role na empresa.
+     */
+    Long countByEmpresaIdAndRole(Long empresaId, Role role); // <-- NOVO MÉTODO
 }

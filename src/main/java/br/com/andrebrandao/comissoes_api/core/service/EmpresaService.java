@@ -19,6 +19,8 @@ import br.com.andrebrandao.comissoes_api.core.repository.ModuloRepository;
 import br.com.andrebrandao.comissoes_api.security.model.Role; // Import de Segurança
 import br.com.andrebrandao.comissoes_api.security.model.User; // Import de Segurança
 import br.com.andrebrandao.comissoes_api.security.repository.UserRepository; // Import de Segurança
+import br.com.andrebrandao.comissoes_api.security.service.TenantService;
+import br.com.andrebrandao.comissoes_api.core.dto.EmpresaDetalhesDTO;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -33,6 +35,7 @@ public class EmpresaService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    private final TenantService tenantService;
     
     public List<Empresa> listarTodas() {
         return empresaRepository.findAll();
@@ -112,5 +115,31 @@ public class EmpresaService {
         
         empresa.setModulosAtivos(novosModulos);
         return empresaRepository.save(empresa);
+    }
+
+/**
+     * Busca os detalhes da Empresa à qual o usuário ADMIN logado pertence,
+     * incluindo a contagem total de usuários ADMIN associados a essa empresa. // <-- DESCRIÇÃO ATUALIZADA
+     *
+     * @return O DTO EmpresaDetalhesDTO preenchido.
+     * @throws EntityNotFoundException se a empresa do usuário logado não for encontrada.
+     */
+    @Transactional(readOnly = true)
+    public EmpresaDetalhesDTO buscarDetalhesEmpresaLogada() {
+        // 1. Pega o ID da Empresa do usuário ADMIN logado
+        Long empresaId = tenantService.getEmpresaIdDoUsuarioLogado();
+        if (empresaId == null) {
+            throw new IllegalStateException("Usuário logado não está associado a uma empresa.");
+        }
+
+        // 2. Busca a entidade Empresa
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new EntityNotFoundException("Empresa não encontrada com o ID: " + empresaId));
+
+        // 3. Usa o UserRepository para contar APENAS os usuários ADMIN da empresa
+        Long qtdAdmins = userRepository.countByEmpresaIdAndRole(empresaId, Role.ROLE_ADMIN); // <-- CHAMADA MODIFICADA
+
+        // 4. Mapeia para o DTO de resposta (o nome do parâmetro deve coincidir com o do DTO)
+        return EmpresaDetalhesDTO.fromEntity(empresa, qtdAdmins); // <-- PASSANDO A CONTAGEM DE ADMINS
     }
 }

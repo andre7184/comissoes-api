@@ -20,7 +20,7 @@ public class DashboardResponseDTO {
     private BigDecimal totalComissoesMes;
     private Long qtdVendasMes;
     private BigDecimal mediaVendaMes; // Calculado no Service: totalVendasMes / qtdVendasMes
-
+    private BigDecimal mediaComissaoMes; // Calculado no Service: totalComissoesMes / qtdVendasMes
     // --- Ranking e Vendas Detalhadas ---
     private List<VendedorRankingDTO> rankingVendedores;
     private List<VendaDetalheDTO> maioresVendas;

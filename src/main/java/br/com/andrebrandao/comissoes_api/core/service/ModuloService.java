@@ -7,6 +7,7 @@ import br.com.andrebrandao.comissoes_api.core.dto.ModuloRequestDTO;
 import br.com.andrebrandao.comissoes_api.core.model.Modulo;
 import br.com.andrebrandao.comissoes_api.core.model.ModuloStatus;
 import br.com.andrebrandao.comissoes_api.core.repository.ModuloRepository;
+import br.com.andrebrandao.comissoes_api.core.dto.ModuloCatalogoDTO;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -107,5 +108,22 @@ public class ModuloService {
         // 1. Chama o novo método do repositório
         // 2. Filtra especificamente pelo status PRONTO_PARA_PRODUCAO
         return moduloRepository.findByStatus(ModuloStatus.PRONTO_PARA_PRODUCAO);
+    }
+
+    /**
+     * Lista os módulos disponíveis para o público (catálogo).
+     * Retorna apenas módulos com status PRONTO_PARA_PRODUCAO e mapeados
+     * para o DTO simplificado ModuloCatalogoDTO.
+     *
+     * @return Lista de ModuloCatalogoDTO.
+     */
+    public List<ModuloCatalogoDTO> listarCatalogoPublico() {
+        // 1. Busca os módulos PRONTO_PARA_PRODUCAO usando o método existente no repositório
+        List<Modulo> modulosDisponiveis = moduloRepository.findByStatus(ModuloStatus.PRONTO_PARA_PRODUCAO);
+
+        // 2. Mapeia a lista de entidades para a lista de DTOs do catálogo
+        return modulosDisponiveis.stream()
+                .map(ModuloCatalogoDTO::fromEntity) // Usa o método de fábrica do DTO
+                .toList();
     }
 }

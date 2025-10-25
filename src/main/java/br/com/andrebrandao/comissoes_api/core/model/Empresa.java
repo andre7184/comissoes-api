@@ -39,6 +39,9 @@ public class Empresa {
     @Column(nullable = false, updatable = false)
     private LocalDateTime dataCadastro;
 
+    @Column(nullable = true, length = 255) // Permite nulo inicialmente
+    private String razaoSocial;
+    
     // --- AQUI ESTÁ A LÓGICA DE MÓDULOS ---
 
     /**

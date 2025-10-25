@@ -1,4 +1,4 @@
-package br.com.andrebrandao.comissoes_api.empresa.controller;
+package br.com.andrebrandao.comissoes_api.empresa.controller; // Mantém o pacote
 
 import java.util.Set;
 
@@ -9,43 +9,45 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.andrebrandao.comissoes_api.core.model.Modulo;
 import br.com.andrebrandao.comissoes_api.security.model.User;
-import br.com.andrebrandao.comissoes_api.security.service.TenantService; // 1. IMPORTANTE!
+import br.com.andrebrandao.comissoes_api.security.service.TenantService;
 import lombok.RequiredArgsConstructor;
+
+// --- NOVOS IMPORTS ---
+import br.com.andrebrandao.comissoes_api.core.dto.EmpresaDetalhesDTO;
+import br.com.andrebrandao.comissoes_api.core.service.EmpresaService;
 
 /**
  * Controller para endpoints usados pelo ADMIN da empresa-cliente (Tenant).
- * Todas as APIs que o seu *cliente* logado usa (e que não são do Super Admin)
- * podem começar aqui.
  */
 @RestController
-@RequestMapping("/api/empresa") // 2. Novo prefixo de API: /api/empresa
+@RequestMapping("/api/empresa")
 @RequiredArgsConstructor
 public class EmpresaAdminController {
 
-    // 3. Injeta o helper que sabe quem está logado
     private final TenantService tenantService;
+    private final EmpresaService empresaService; // <-- INJETAR O EmpresaService
 
     /**
-     * Endpoint para o admin da empresa-cliente listar
-     * todos os módulos que estão *atualmente ativos* para sua empresa.
-     *
+     * Endpoint para o admin listar os módulos ativos para sua empresa.
      * Mapeado para: GET /api/empresa/meus-modulos
-     *
-     * @return Um Set (conjunto) dos objetos Modulo ativos (com id, nome,
-     * chave, etc).
      */
     @GetMapping("/meus-modulos")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')") // 4. A MÁGICA! Só permite ROLE_ADMIN
-                                          // (o da empresa)
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public Set<Modulo> listarMeusModulosAtivos() {
-        
-        // 5. Usa o TenantService para pegar o objeto 'User' completo
-        //    do usuário que fez a requisição (o dono do token)
         User adminLogado = tenantService.getUsuarioLogado();
-        
-        // 6. Pega a empresa associada a esse usuário...
-        // 7. ...e da empresa, pega a lista de módulos ativos e a retorna.
         return adminLogado.getEmpresa().getModulosAtivos();
     }
 
+    /**
+     * Endpoint para buscar os detalhes da empresa do usuário ADMIN logado.
+     * Mapeado para: GET /api/empresa/me
+     *
+     * @return O DTO EmpresaDetalhesDTO preenchido.
+     */
+    @GetMapping("/me") // <-- NOVO ENDPOINT
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')") // <-- Protegido por ROLE_ADMIN
+    public EmpresaDetalhesDTO buscarMinhaEmpresa() {
+        // Chama o método que criamos no EmpresaService
+        return empresaService.buscarDetalhesEmpresaLogada();
+    }
 }
