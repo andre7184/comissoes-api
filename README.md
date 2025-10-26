@@ -30,23 +30,9 @@ Endpoints públicos para login.
 | **Descrição** | Autentica um usuário e retorna o Token JWT e as chaves dos módulos ativos para sua empresa. | `200 OK`       |
 
 **Requisição (Body - JSON): `LoginRequest`**
-```json
-{
-  "email": "admin@empresa.com",
-  "senha": "senha123"
-}
-```
+
 **Resposta Sucesso (200 OK): `LoginResponse`**
 
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "permissoesModulos": [
-    "COMISSAO_CORE",
-    "RELATORIOS_BASICOS"
-  ]
-}
-```
 ---
 
 ## 2. Acesso Super Admin (`/api/superadmin`)
@@ -55,22 +41,49 @@ Acesso restrito a usuários com `ROLE_SUPER_ADMIN`.
 
 ### 2.1. Gerenciamento de Módulos (`/api/superadmin/modulos`)
 
-| Método | URL                          | Descrição                                                          |
-| :----- | :--------------------------- | :----------------------------------------------------------------- |
-| `POST` | `/api/superadmin/modulos`    | Cria um novo módulo no catálogo.                               |
-| `GET`  | `/api/superadmin/modulos`    | Lista todos os módulos.                                     |
-| `PUT`  | `/api/superadmin/modulos/{id}` | Atualiza um módulo existente.                               |
-| `GET`  | `/api/superadmin/modulos/disponiveis` | Lista módulos com status `PRONTO_PARA_PRODUCAO`. |
+| Método | URL                          | Descrição                                                                               |
+| :----- | :--------------------------- | :-------------------------------------------------------------------------------------- |
+| `POST` | `/api/superadmin/modulos`    | Cria um novo módulo no catálogo.                                                        |
+| `GET`  | `/api/superadmin/modulos`    | Lista todos os módulos.                                                                 |
+| `GET`  | `/api/superadmin/modulos/{id}` | Busca um módulo pelo ID.                                                                |
+| `PUT`  | `/api/superadmin/modulos/{id}` | **(NOVO DETALHE)** Atualiza os dados de um módulo existente.                             |
+| `GET`  | `/api/superadmin/modulos/disponiveis` | Lista módulos com status `PRONTO_PARA_PRODUCAO`.                                      |
+
+#### `POST /api/superadmin/modulos`
+**Requisição (Body - JSON): `ModuloRequestDTO`**
+**Resposta Sucesso (201 Created): `Modulo` (Entidade)**
+
+#### `PUT /api/superadmin/modulos/{id}` **(NOVO DETALHE)**
+**Requisição (Body - JSON): `ModuloRequestDTO`**
+**Resposta Sucesso (200 OK): `Modulo` (Entidade Atualizada)**
 
 ### 2.2. Gerenciamento de Empresas (`/api/superadmin/empresas`)
 
-| Método | URL                             | Descrição                                                                        |
-| :----- | :------------------------------ | :------------------------------------------------------------------------------- |
-| `POST` | `/api/superadmin/empresas`        | Cria nova empresa, o primeiro `ROLE_ADMIN` e associa módulos padrão. |
-| `GET`  | `/api/superadmin/empresas`        | Lista todas as empresas.                                     |
-| `GET`  | `/api/superadmin/empresas/{id}`   | Busca uma empresa pelo ID.                                     |
-| `PUT`  | `/api/superadmin/empresas/{id}`   | Atualiza dados básicos da empresa (`nomeFantasia`, `cnpj`).          |
-| `PUT`  | `/api/superadmin/empresas/{id}/modulos` | **Vende/Associa** um novo conjunto de módulos, substituindo os módulos ativos. |
+| Método | URL                             | Descrição                                                                               |
+| :----- | :------------------------------ | :-------------------------------------------------------------------------------------- |
+| `POST` | `/api/superadmin/empresas`        | Cria nova empresa, o primeiro `ROLE_ADMIN` e associa módulos padrão.                      |
+| `GET`  | `/api/superadmin/empresas`        | Lista todas as empresas.                                                                |
+| `GET`  | `/api/superadmin/empresas/{id}`   | Busca uma empresa pelo ID.                                                                |
+| `PUT`  | `/api/superadmin/empresas/{id}`   | **(NOVO DETALHE)** Atualiza dados básicos da empresa (`nomeFantasia`, `cnpj`).            |
+| `PUT`  | `/api/superadmin/empresas/{id}/modulos` | Vende/Associa um novo conjunto de módulos, substituindo os módulos ativos.           |
+
+#### `POST /api/superadmin/empresas`
+**Requisição (Body - JSON): `EmpresaRequestDTO`**
+**Resposta Sucesso (201 Created): `Empresa` (Entidade)**
+
+#### `PUT /api/superadmin/empresas/{id}` **(NOVO DETALHE)**
+**Requisição (Body - JSON): `EmpresaUpdateRequestDTO`**
+**Resposta Sucesso (200 OK): `Empresa` (Entidade Atualizada)**
+
+#### `PUT /api/superadmin/empresas/{id}/modulos`
+**Requisição (Body - JSON): `AtualizarModulosEmpresaRequestDTO`**
+**Resposta Sucesso (200 OK): `Empresa` (Entidade Atualizada)**
+
+### 2.3. Gerenciamento de Usuários Admin (`/api/superadmin/empresas/{empresaId}/admins`) **(NOVO)**
+
+#### `POST /api/superadmin/empresas/{empresaId}/admins` **(NOVO)**
+**Requisição (Body - JSON): `AdminUsuarioRequestDTO` (Exemplo)**
+**Resposta Sucesso (201 Created): `User` (Entidade do Usuário Criado)**
 
 ---
 
@@ -118,22 +131,58 @@ Acesso restrito a usuários com `ROLE_ADMIN` e módulo `COMISSAO_CORE` ativo.
 
 ### 5.1. Gerenciamento de Vendedores (`/api/vendedores`)
 
-*(Estrutura dos endpoints mantida)*
+| Método | URL                        | Descrição                                                                               |
+| :----- | :------------------------- | :-------------------------------------------------------------------------------------- |
+| `POST` | `/api/vendedores`            | Cria um novo vendedor e seu usuário `ROLE_VENDEDOR`.                                     |
+| `PUT`  | `/api/vendedores/{id}`       | **(NOVO DETALHE)** Atualiza o `percentualComissao` de um vendedor.                     |
+| `GET`  | `/api/vendedores/{id}`       | Busca dados resumidos de um vendedor (incluindo métricas).                               |
+| `GET`  | `/api/vendedores`            | Lista todos os vendedores da empresa com métricas agregadas.                             |
+| `GET`  | `/api/vendedores/{id}/detalhes` | Busca o vendedor com todas as métricas e o histórico mensal.                            |
+
+#### `POST /api/vendedores`
+**Requisição (Body - JSON): `VendedorRequestDTO`**
+**Resposta Sucesso (201 Created): `VendedorCriadoResponseDTO`**
+
+#### `PUT /api/vendedores/{id}` **(NOVO DETALHE)**
+**Requisição (Body - JSON): `VendedorUpdateRequestDTO`**
+**Resposta Sucesso (200 OK): `VendedorResponseDTO`**
 
 #### `GET /api/vendedores` (Listar Todos)
-**Descrição:** Lista todos os vendedores da empresa com métricas agregadas (`qtdVendas`, `valorTotalVendas`).
 **Resposta Sucesso (200 OK): `List<VendedorResponseDTO>`**
 
 #### `GET /api/vendedores/{id}/detalhes` (Detalhes e Histórico)
-**Descrição:** Busca o vendedor com todas as métricas e o `historicoRendimentos` mensal.
 **Resposta Sucesso (200 OK): `VendedorDetalhadoResponseDTO`**
 
 ### 5.2. Gerenciamento de Vendas (`/api/vendas`)
 
-*(Estrutura dos endpoints mantida)*
+| Método | URL           | Descrição                                                              |
+| :----- | :------------ | :--------------------------------------------------------------------- |
+| `POST` | `/api/vendas` | Lança uma nova venda e calcula o `valorComissaoCalculado`. |
+| `GET`  | `/api/vendas` | Lista todas as vendas registradas na empresa logada.         |
+
+#### `POST /api/vendas`
+**Requisição (Body - JSON): `VendaRequestDTO`**
+**Resposta Sucesso (201 Created): `Venda` (Entidade)**
 
 ### 5.3. Dashboard Gerencial (`/api/dashboard`)
 
 #### `GET /api/dashboard/empresa` **(ATUALIZADO)**
 **Descrição:** Retorna todas as métricas consolidadas (totais do mês, rankings, maiores/últimas vendas e histórico).
+**Status Sucesso:** `200 OK`.
+
 **Resposta Sucesso (200 OK): `DashboardResponseDTO`**
+
+---
+
+## 6. Acesso Geral - Usuário Logado (`/api/usuarios`) **(NOVO)**
+
+Endpoints disponíveis para qualquer usuário autenticado gerenciar sua própria conta.
+
+### `PUT /api/usuarios/me/senha` **(NOVO)**
+
+**Descrição:** Permite que o usuário logado (Super Admin, Admin ou Vendedor) altere sua própria senha.
+**Permissões:** Qualquer usuário autenticado.
+**Status Sucesso:** `200 OK` (ou `204 No Content`).
+
+**Requisição (Body - JSON): `AlterarSenhaRequestDTO` (Exemplo)**
+**Resposta Sucesso (200 OK ou 204 No Content):** (Sem corpo)
