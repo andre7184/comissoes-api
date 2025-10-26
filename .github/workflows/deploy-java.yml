@@ -13,6 +13,10 @@ jobs:
     steps:
       - name: 1. Checkout do Código
         uses: actions/checkout@v3
+        # Importante: Se for disparado manualmente, garante que pega o código
+        # da branch que você selecionar (ex: 'develop')
+        with:
+          ref: ${{ github.event.ref }}
 
       - name: 2. Login no Docker Hub
         uses: docker/login-action@v2
