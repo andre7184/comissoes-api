@@ -1,20 +1,26 @@
-package br.com.andrebrandao.comissoes_api.empresa.controller; // Mantém o pacote
+// src/main/java/br/com/andrebrandao/comissoes_api/empresa/controller/EmpresaAdminController.java
+package br.com.andrebrandao.comissoes_api.empresa.controller;
 
 import java.util.Set;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping; // Importar PostMapping
+import org.springframework.web.bind.annotation.RequestBody; // Importar RequestBody
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus; // Importar ResponseStatus
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.andrebrandao.comissoes_api.core.model.Modulo;
 import br.com.andrebrandao.comissoes_api.security.model.User;
 import br.com.andrebrandao.comissoes_api.security.service.TenantService;
+import jakarta.validation.Valid; // Importar Valid
 import lombok.RequiredArgsConstructor;
-
-// --- NOVOS IMPORTS ---
+import br.com.andrebrandao.comissoes_api.core.dto.AdminUsuarioRequestDTO; // Importar DTO Request
 import br.com.andrebrandao.comissoes_api.core.dto.EmpresaDetalhesDTO;
 import br.com.andrebrandao.comissoes_api.core.service.EmpresaService;
+import br.com.andrebrandao.comissoes_api.security.dto.UsuarioResponseDTO; // Importar DTO Response
 
 /**
  * Controller para endpoints usados pelo ADMIN da empresa-cliente (Tenant).
@@ -25,29 +31,37 @@ import br.com.andrebrandao.comissoes_api.core.service.EmpresaService;
 public class EmpresaAdminController {
 
     private final TenantService tenantService;
-    private final EmpresaService empresaService; // <-- INJETAR O EmpresaService
+    private final EmpresaService empresaService;
 
-    /**
-     * Endpoint para o admin listar os módulos ativos para sua empresa.
-     * Mapeado para: GET /api/empresa/meus-modulos
-     */
     @GetMapping("/meus-modulos")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public Set<Modulo> listarMeusModulosAtivos() {
         User adminLogado = tenantService.getUsuarioLogado();
-        return adminLogado.getEmpresa().getModulosAtivos();
+        // Adicionar tratamento se getEmpresa for null ou getModulosAtivos for null
+        if (adminLogado != null && adminLogado.getEmpresa() != null) {
+             return adminLogado.getEmpresa().getModulosAtivos();
+        }
+        return Set.of(); // Retorna conjunto vazio se não encontrar
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public EmpresaDetalhesDTO buscarMinhaEmpresa() {
+        return empresaService.buscarDetalhesEmpresaLogada();
     }
 
     /**
-     * Endpoint para buscar os detalhes da empresa do usuário ADMIN logado.
-     * Mapeado para: GET /api/empresa/me
+     * Endpoint para o ADMIN logado criar um novo usuário ROLE_ADMIN na sua própria empresa.
+     * Mapeado para: POST /api/empresa/admins
      *
-     * @return O DTO EmpresaDetalhesDTO preenchido.
+     * @param dto Os dados do novo admin (JSON do body).
+     * @return O DTO UsuarioResponseDTO do admin criado e o status 201 Created.
      */
-    @GetMapping("/me") // <-- NOVO ENDPOINT
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')") // <-- Protegido por ROLE_ADMIN
-    public EmpresaDetalhesDTO buscarMinhaEmpresa() {
-        // Chama o método que criamos no EmpresaService
-        return empresaService.buscarDetalhesEmpresaLogada();
+    @PostMapping("/admins") // Este método agora está AQUI
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')") // Protegido por ROLE_ADMIN
+    public UsuarioResponseDTO criarAdminParaMinhaEmpresa(@Valid @RequestBody AdminUsuarioRequestDTO dto) { // Retorna DTO
+        User novoAdmin = empresaService.criarAdminParaMinhaEmpresa(dto); // Chama o serviço correto
+        return UsuarioResponseDTO.fromEntity(novoAdmin); // Mapeia para DTO
     }
 }

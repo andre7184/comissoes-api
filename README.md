@@ -330,6 +330,81 @@ Endpoints para o `ROLE_ADMIN` obter informações sobre sua própria empresa.
     }
 ]
 ```
+<!-- adicionar endpoints /api/empresa/admins Criar o Novo Usuário Admin pelo proprio ADMIN () -->
+## 4.1. Gerenciamento de Usuários (`/api/empresa/admins`)
+
+| Método | URL                        | Descrição                                                                               |
+| :----- | :------------------------- | :-------------------------------------------------------------------------------------- |
+| `POST` | `/api/empresa/admins`            | Cria um novo usuário `ROLE_ADMIN`.                                               |
+| `GET`  | `/api/empresa/admins`            | Lista todos os usuários da empresa.                                              |
+| `GET`  | `/api/empresa/admins/{id}`       | Busca detalhes de um usuário da empresa.                                         |
+| `PUT`  | `/api/empresa/admins/{id}`       | Atualiza um usuário da empresa.                                                 |
+
+### `POST /api/empresa/admins`
+**Requisição (Body - JSON): `AdminUsuarioRequestDTO`**
+```json
+{
+  "nome": "John Doe",
+  "email": "johndoe@techsolutions.com",
+  "senha": "password123"
+}
+```
+
+**Resposta Sucesso (201 Created): `User` (Entidade do Usuário Criado)**
+```json
+{
+  "id": 1,
+  "nome": "John Doe",
+  "email": "johndoe@techsolutions.com",
+  "role": "ROLE_ADMIN",
+  "dataCriacao": "2025-10-25T21:10:00",
+  "empresaId": 1
+}
+```
+### `GET /api/empresa/admins`
+**Resposta Sucesso (200 OK): `List<User>` (Lista de Usuários da Empresa)**
+```json
+[
+    {
+      "id": 1,
+      "nome": "John Doe",
+      "email": "johndoe@techsolutions.com",
+      "role": "ROLE_ADMIN",
+      "dataCriacao": "2025-10-25T21:10:00",
+      "empresaId": 1    
+    },
+    {
+      "id": 2,
+      "nome": "Jane Smith",
+      "email": "janesmith@techsolutions.com",
+      "role": "ROLE_ADMIN",
+      "dataCriacao": "2025-10-25T21:10:00",
+      "empresaId": 1
+    }
+]
+```
+
+### `PUT /api/empresa/admins/{id}`
+**Requisição (Body - JSON): `AdminUsuarioUpdateRequestDTO`**
+```json
+{
+  "nome": "John Doe",
+  "email": "johndoe@techsolutions.com",
+  "senha": "password123"
+}
+``` 
+
+**Resposta Sucesso (200 OK): `User` (Entidade do Usuário Atualizado)**
+```json
+{
+  "id": 1,
+  "nome": "John Doe",
+  "email": "johndoe@techsolutions.com",
+  "role": "ROLE_ADMIN",
+  "dataCriacao": "2025-10-25T21:10:00",
+  "empresaId": 1
+}
+```
 
 ---
 

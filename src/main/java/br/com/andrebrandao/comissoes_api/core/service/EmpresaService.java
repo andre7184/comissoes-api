@@ -20,6 +20,7 @@ import br.com.andrebrandao.comissoes_api.security.model.Role; // Import de Segur
 import br.com.andrebrandao.comissoes_api.security.model.User; // Import de Segurança
 import br.com.andrebrandao.comissoes_api.security.repository.UserRepository; // Import de Segurança
 import br.com.andrebrandao.comissoes_api.security.service.TenantService;
+import br.com.andrebrandao.comissoes_api.core.dto.AdminUsuarioRequestDTO;
 import br.com.andrebrandao.comissoes_api.core.dto.EmpresaDetalhesDTO;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -141,5 +142,77 @@ public class EmpresaService {
 
         // 4. Mapeia para o DTO de resposta (o nome do parâmetro deve coincidir com o do DTO)
         return EmpresaDetalhesDTO.fromEntity(empresa, qtdAdmins); // <-- PASSANDO A CONTAGEM DE ADMINS
+    }
+
+    /**
+     * Cria um novo usuário com ROLE_ADMIN para uma empresa existente.
+     * Executado pelo Super Admin.
+     *
+     * @param empresaId O ID da empresa à qual o novo admin pertencerá.
+     * @param dto Os dados do novo admin (nome, email, senha).
+     * @return A entidade User do admin criado.
+     * @throws EntityNotFoundException se a empresa não for encontrada.
+     * @throws IllegalStateException se o email já estiver em uso.
+     */
+    @Transactional // Garante atomicidade
+    public User criarAdminParaEmpresa(Long empresaId, AdminUsuarioRequestDTO dto) {
+        // 1. Busca a empresa para garantir que ela existe
+        Empresa empresa = buscarPorId(empresaId); // Reutiliza o método buscarPorId
+
+        // 2. Verifica se o email já está em uso
+        if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
+            throw new IllegalStateException("O email informado já está em uso: " + dto.getEmail());
+        }
+
+        // 3. Cria o novo usuário Admin
+        User novoAdmin = User.builder()
+                .nome(dto.getNome())
+                .email(dto.getEmail())
+                .senha(passwordEncoder.encode(dto.getSenha())) // Criptografa a senha
+                .role(Role.ROLE_ADMIN) // Define o papel
+                .empresa(empresa) // Associa à empresa encontrada
+                // dataCriacao será preenchida automaticamente
+                .build();
+
+        // 4. Salva e retorna o usuário criado
+        return userRepository.save(novoAdmin);
+    }
+
+    /**
+     * Cria um novo usuário com ROLE_ADMIN para a EMPRESA DO ADMIN LOGADO.
+     * Executado pelo Admin da própria empresa.
+     *
+     * @param dto Os dados do novo admin (nome, email, senha).
+     * @return A entidade User do admin criado.
+     * @throws EntityNotFoundException se a empresa do admin logado não for encontrada (improvável).
+     * @throws IllegalStateException se o email já estiver em uso ou se o usuário logado não pertencer a uma empresa.
+     */
+    @Transactional
+    public User criarAdminParaMinhaEmpresa(AdminUsuarioRequestDTO dto) {
+        // 1. Pega o ID da Empresa do ADMIN logado
+        Long empresaId = tenantService.getEmpresaIdDoUsuarioLogado();
+        if (empresaId == null) {
+            throw new IllegalStateException("Usuário logado não está associado a uma empresa válida para criar admins.");
+        }
+
+        // 2. Busca a referência da empresa (não precisa carregar tudo, só a referência para associação)
+        Empresa empresa = empresaRepository.getReferenceById(empresaId);
+
+        // 3. Verifica se o email já está em uso
+        if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
+            throw new IllegalStateException("O email informado já está em uso: " + dto.getEmail());
+        }
+
+        // 4. Cria o novo usuário Admin
+        User novoAdmin = User.builder()
+                .nome(dto.getNome())
+                .email(dto.getEmail())
+                .senha(passwordEncoder.encode(dto.getSenha()))
+                .role(Role.ROLE_ADMIN)
+                .empresa(empresa) // Associa à empresa do admin logado
+                .build();
+
+        // 5. Salva e retorna o usuário criado
+        return userRepository.save(novoAdmin);
     }
 }
