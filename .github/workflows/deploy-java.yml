@@ -129,6 +129,11 @@ jobs:
             echo "Parando contêineres antigos..."
             docker compose down --remove-orphans
             
+            # NOVO: Remove explicitamente contêineres antigos com o mesmo nome para evitar conflito
+            echo "Removendo contêineres em conflito (se existirem)..."
+            docker rm -f ${{ secrets.JAVA_PROJECT_REPO_NAME }}_db || true
+            docker rm -f ${{ secrets.JAVA_PROJECT_REPO_NAME }}_web || true
+              
             echo "Baixando nova imagem..."
             # CORRIGIDO: Removido o 'K' extra
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest 
