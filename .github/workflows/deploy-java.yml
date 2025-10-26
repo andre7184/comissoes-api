@@ -141,7 +141,8 @@ jobs:
             timeout=90
             while ! docker compose exec db_java pg_isready -U "${{ secrets.DB_USER }}" -h localhost; do
               sleep 3
-              timeout=\$(expr \$timeout - 3)
+              # CORREÇÃO DA SINTAXE: usa a aritmética moderna do Bash
+              timeout=\$((timeout - 3))
               if [ \$timeout -le 0 ]; then
                 echo "Erro: Timeout esperando pelo banco de dados."
                 docker compose logs db_java
