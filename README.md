@@ -38,6 +38,15 @@ Endpoints públicos para login.
 ```
 **Resposta Sucesso (200 OK): `LoginResponse`**
 
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "permissoesModulos": [
+    "COMISSAO_CORE",
+    "RELATORIOS_BASICOS"
+  ]
+}
+
 ---
 
 ## 2. Acesso Super Admin (`/api/superadmin`)
