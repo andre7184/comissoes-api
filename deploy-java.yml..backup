@@ -1,4 +1,4 @@
-name: Deploy Aplicativo Java (comissoesapi)
+name: Deploy Aplicativo Java (comissoes-api)
 
 on:
   push:
@@ -14,12 +14,14 @@ jobs:
       - name: 1. Checkout do Código
         uses: actions/checkout@v3
         with:
+          # Garante que ele pega o código da branch selecionada no 'workflow_dispatch' (ex: develop)
           ref: ${{ github.event.ref }}
 
       - name: 2. Login no Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          # CORRIGIDO: Removido o 'K' extra
+          username: ${{ secrets.DOCKERHUB_USERNAME }} 
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: 3. Construir e Enviar Imagem Docker
@@ -27,9 +29,10 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest # Ex: andre7184/comissoesapi:latest
+          # CORRIGIDO: Removido o 'K' extra
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest 
 
-      - name: 4. Conectar no Servidor, Configurar Nginx/Adminer e Fazer Deploy
+      - name: 4. Conectar no Servidor, Configurar Nginx e Fazer Deploy
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -37,16 +40,17 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             # Define e entra no diretório do projeto no VPS
-            PROJECT_DIR="${{ secrets.JAVA_PROJECT_DIR }}" # Ex: /home/deployer/comissoesapi
+            PROJECT_DIR="${{ secrets.JAVA_PROJECT_DIR }}"
             mkdir -p $PROJECT_DIR
             cd $PROJECT_DIR
 
-            # --- Cria o docker-compose.yml (SEM 'version' e COM Adminer) ---
+            # --- Cria o docker-compose.yml ---
             cat << EOF > docker-compose.yml
+            version: '3.8'
             services:
               db_java:
                 image: postgres:15
-                container_name: ${{ secrets.JAVA_PROJECT_REPO_NAME }}_db # Ex: comissoesapi_db
+                container_name: ${{ secrets.JAVA_PROJECT_REPO_NAME }}_db
                 restart: unless-stopped
                 environment:
                   POSTGRES_DB: \${DB_NAME}
@@ -58,29 +62,18 @@ jobs:
                   - java-net
               
               app_java:
-                image: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest # Ex: andre7184/comissoesapi:latest
-                container_name: ${{ secrets.JAVA_PROJECT_REPO_NAME }}_web # Ex: comissoesapi_web
+                # CORRIGIDO: Removido o 'K' extra
+                image: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest 
+                container_name: ${{ secrets.JAVA_PROJECT_REPO_NAME }}_web
                 restart: unless-stopped
                 ports:
-                  # App Java exposto APENAS no localhost:8081 para Nginx
-                  - "127.0.0.1:${{ secrets.JAVA_APP_HOST_PORT }}:${{ secrets.JAVA_APP_INTERNAL_PORT }}" # Ex: 127.0.0.1:8081:8080
+                  - "127.0.0.1:${{ secrets.JAVA_APP_HOST_PORT }}:${{ secrets.JAVA_APP_INTERNAL_PORT }}"
                 env_file: .env
                 depends_on:
                   - db_java
                 networks:
                   - java-net
             
-              # Serviço Adminer para gerenciamento do DB
-              adminer:
-                image: adminer # Imagem oficial do Adminer
-                container_name: ${{ secrets.JAVA_PROJECT_REPO_NAME }}_adminer # Ex: comissoesapi_adminer
-                restart: unless-stopped
-                ports:
-                  # Adminer exposto APENAS no localhost:8082 para Nginx
-                  - "127.0.0.1:8082:8080" 
-                networks:
-                  - java-net
-
             volumes:
               postgres_data_${{ secrets.JAVA_PROJECT_REPO_NAME }}:
 
@@ -97,51 +90,24 @@ jobs:
             echo "DB_USER=${{ secrets.DB_USER }}" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
 
-            # --- Cria a configuração do Nginx (COM HTTPS e Adminer) ---
+            # --- Cria a configuração do Nginx ---
             cat << EOF > nginx.conf
             server {
-                # Bloco HTTP: Redireciona tudo para HTTPS
                 listen 80;
-                server_name ${{ secrets.JAVA_PROJECT_DOMAIN }}; # Ex: comissoesapi.promptweb.com.br
-                return 301 https://\$host\$request_uri;
-            }
+                server_name ${{ secrets.JAVA_PROJECT_DOMAIN }};
 
-            server {
-                # Bloco HTTPS
-                listen 443 ssl http2; 
-                server_name ${{ secrets.JAVA_PROJECT_DOMAIN }}; # Ex: comissoesapi.promptweb.com.br
-
-                # Certificados SSL (Certbot - usa o do domínio principal)
-                ssl_certificate /etc/letsencrypt/live/promptweb.com.br/fullchain.pem; 
-                ssl_certificate_key /etc/letsencrypt/live/promptweb.com.br/privkey.pem; 
-                include /etc/letsencrypt/options-ssl-nginx.conf; 
-                ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; 
-
-                # Configuração para o App Java
                 location / {
-                    proxy_pass http://127.0.0.1:${{ secrets.JAVA_APP_HOST_PORT }}; # Ex: http://127.0.0.1:8081
+                    proxy_pass http://127.0.0.1:${{ secrets.JAVA_APP_HOST_PORT }};
                     proxy_set_header Host \$host;
                     proxy_set_header X-Real-IP \$remote_addr;
                     proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto https; 
-                }
-
-                # Configuração para o Adminer (acessível em /adminer/)
-                location /adminer/ {
-                    proxy_pass http://127.0.0.1:8082/; # Aponta para a porta interna do Adminer
-                    proxy_set_header Host \$host;
-                    proxy_set_header X-Real-IP \$remote_addr;
-                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                    proxy_set_header X-Forwarded-Proto https;
-                    
-                    # Opcional: Adicionar autenticação básica para proteger o Adminer
-                    # auth_basic "Acesso Restrito ao Adminer";
-                    # auth_basic_user_file /etc/nginx/.htpasswd_adminer; # Crie este arquivo com htpasswd
+                    proxy_set_header X-Forwarded-Proto \$scheme;
                 }
             }
             EOF
             
             # --- Bloco de Administração do Servidor (com caminhos absolutos) ---
+            
             NGINX_CONF_FILE="/etc/nginx/sites-available/${{ secrets.JAVA_PROJECT_DOMAIN }}"
             NGINX_LINK_FILE="/etc/nginx/sites-enabled/${{ secrets.JAVA_PROJECT_DOMAIN }}"
 
@@ -149,31 +115,33 @@ jobs:
             sudo /usr/bin/mv $PROJECT_DIR/nginx.conf $NGINX_CONF_FILE
             
             echo "Ativando site no Nginx..."
-            # Garante que o link aponta para o arquivo correto
             sudo /usr/bin/ln -sf $NGINX_CONF_FILE $NGINX_LINK_FILE
             
             echo "Testando configuração do Nginx..."
-            # Verificação explícita do código de saída
-            if ! sudo /usr/sbin/nginx -t; then
-                echo "Erro na configuração do Nginx! Verifique o output acima."
+            sudo /usr/sbin/nginx -t
+            if [ \$? -ne 0 ]; then
+                echo "Erro na configuração do Nginx!"
                 exit 1
             fi
             
             # --- Executa o Deploy ---
+            
             echo "Parando contêineres antigos..."
             docker compose down --remove-orphans
-
-            echo "Removendo contêineres em conflito (se existirem)..."
-            docker rm -f ${{ secrets.JAVA_PROJECT_REPO_NAME }}_db || true
-            docker rm -f ${{ secrets.JAVA_PROJECT_REPO_NAME }}_web || true
-            docker rm -f ${{ secrets.JAVA_PROJECT_REPO_NAME }}_adminer || true 
+            
+            # NOVO: Remove explicitamente contêineres antigos com o mesmo nome para evitar conflito
+            # echo "Removendo contêineres em conflito (se existirem)..."
+            # docker rm -f ${{ secrets.JAVA_PROJECT_REPO_NAME }}_db || true
+            # docker rm -f ${{ secrets.JAVA_PROJECT_REPO_NAME }}_web || true
               
-            echo "Baixando nova imagem do App..."
+            echo "Baixando nova imagem..."
+            # CORRIGIDO: Removido o 'K' extra
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest 
-
+            
             echo "Iniciando contêineres..."
             docker compose up -d
 
+            # Espera inteligente para o PostgreSQL
             # Espera inteligente para o PostgreSQL
             echo "Aguardando o banco de dados (PostgreSQL) ficar pronto..."
             timeout=90
@@ -187,10 +155,10 @@ jobs:
               fi
             done
             echo "✅ Banco de dados está pronto!"
-
+            echo "✅ Banco de dados está pronto!"
+            
             echo "Recarregando Nginx..."
             sudo /usr/bin/systemctl reload nginx
-
-            echo "✅ Deploy concluído com sucesso!"
-            echo "   App Java disponível em: https://${{ secrets.JAVA_PROJECT_DOMAIN }}"
-            echo "   Adminer disponível em: https://${{ secrets.JAVA_PROJECT_DOMAIN }}/adminer/"
+            
+            echo "✅ Deploy concluído com sucesso!, agora disponível em: https://${{ secrets.JAVA_PROJECT_DOMAIN }}"
+            echo "Seu app está disponível em: http://${{ secrets.JAVA_PROJECT_DOMAIN }}"
