@@ -3,12 +3,13 @@ name: Deploy Aplicativo Java (comissoes-api)
 on:
   push:
     branches:
-      - main  # Dispara quando houver push na 'main'
-  workflow_dispatch: # Permite disparar manualmente (para seu fluxo Kanban)
+      - main
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: 1. Checkout do Código
         uses: actions/checkout@v3
@@ -19,7 +20,8 @@ jobs:
       - name: 2. Login no Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKKRHUB_USERNAME }} # Corrigido para DOCKERHUB_USERNAME
+          # CORRIGIDO: Removido o 'K' extra
+          username: ${{ secrets.DOCKERHUB_USERNAME }} 
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: 3. Construir e Enviar Imagem Docker
@@ -27,7 +29,8 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest # Corrigido para DOCKERHUB_USERNAME
+          # CORRIGIDO: Removido o 'K' extra
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest 
 
       - name: 4. Conectar no Servidor, Configurar Nginx e Fazer Deploy
         uses: appleboy/ssh-action@master
@@ -36,7 +39,7 @@ jobs:
           username: ${{ secrets.SSH_USER }} # 'deployer'
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Define e entra no diretório do projeto no VPS (ex: /home/deployer/comissoes_api)
+            # Define e entra no diretório do projeto no VPS
             PROJECT_DIR="${{ secrets.JAVA_PROJECT_DIR }}"
             mkdir -p $PROJECT_DIR
             cd $PROJECT_DIR
@@ -59,7 +62,8 @@ jobs:
                   - java-net
               
               app_java:
-                image: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest # Corrigido para DOCKERHUB_USERNAME
+                # CORRIGIDO: Removido o 'K' extra
+                image: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest 
                 container_name: ${{ secrets.JAVA_PROJECT_REPO_NAME }}_web
                 restart: unless-stopped
                 ports:
@@ -102,21 +106,18 @@ jobs:
             }
             EOF
             
-            # --- Bloco de Administração do Servidor (CORRIGIDO) ---
+            # --- Bloco de Administração do Servidor (com caminhos absolutos) ---
             
             NGINX_CONF_FILE="/etc/nginx/sites-available/${{ secrets.JAVA_PROJECT_DOMAIN }}"
             NGINX_LINK_FILE="/etc/nginx/sites-enabled/${{ secrets.JAVA_PROJECT_DOMAIN }}"
 
             echo "Movendo configuração do Nginx..."
-            # CORREÇÃO: Usando caminhos absolutos para bater com o sudoers
             sudo /usr/bin/mv $PROJECT_DIR/nginx.conf $NGINX_CONF_FILE
             
             echo "Ativando site no Nginx..."
-            # CORREÇÃO: Usando caminhos absolutos para bater com o sudoers
             sudo /usr/bin/ln -sf $NGINX_CONF_FILE $NGINX_LINK_FILE
             
             echo "Testando configuração do Nginx..."
-            # CORREÇÃO: Usando caminhos absolutos para bater com o sudoers
             sudo /usr/sbin/nginx -t
             if [ \$? -ne 0 ]; then
                 echo "Erro na configuração do Nginx!"
@@ -129,7 +130,8 @@ jobs:
             docker compose down --remove-orphans
             
             echo "Baixando nova imagem..."
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest # Corrigido para DOCKERHUB_USERNAME
+            # CORRIGIDO: Removido o 'K' extra
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest 
             
             echo "Iniciando contêineres..."
             docker compose up -d
@@ -149,7 +151,6 @@ jobs:
             echo "✅ Banco de dados está pronto!"
             
             echo "Recarregando Nginx..."
-            # CORREÇÃO: Usando caminhos absolutos para bater com o sudoers
             sudo /usr/bin/systemctl reload nginx
             
             echo "✅ Deploy concluído com sucesso!"
