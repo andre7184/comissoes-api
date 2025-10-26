@@ -169,7 +169,17 @@ Acesso restrito a usuários com `ROLE_SUPER_ADMIN`.
   "nomeFantasia": "Tech Solutions & Inovação LTDA",
   "cnpj": "11.222.333/0001-44",
   "dataCadastro": "2024-10-25T03:00:00",
-  "modulosAtivos": [ /* ... */ ]
+  "modulosAtivos": [
+    {
+      "id": 1,
+      "nome": "Sistema de Comissões",
+      "chave": "COMISSAO_CORE",
+      "status": "PRONTO_PARA_PRODUCAO",
+      "descricaoCurta": "Gerenciamento completo...",
+      "precoMensal": 150.00,
+      "isPadrao": true
+    }
+  ]
 }
 ```
 
@@ -229,7 +239,7 @@ Acesso restrito a usuários com `ROLE_SUPER_ADMIN`.
   "email": "maria.gerente@techsolutions.com",
   "role": "ROLE_ADMIN",
   "dataCriacao": "2025-10-25T21:10:00",
-  "empresa": { "id": 10, /* ... */ }
+  "empresa": { "id": 10, "nomeFantasia": "Tech Solutions LTDA", "cnpj": "11.222.333/0001-44" }
 }
 ```
 
