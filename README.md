@@ -46,7 +46,7 @@ Endpoints públicos para login.
     "RELATORIOS_BASICOS"
   ]
 }
-
+```
 ---
 
 ## 2. Acesso Super Admin (`/api/superadmin`)
