@@ -155,5 +155,5 @@ jobs:
             echo "Recarregando Nginx..."
             sudo /usr/bin/systemctl reload nginx
             
-            echo "✅ Deploy concluído com sucesso!"
+            echo "✅ Deploy concluído com sucesso!, agora disponível em: https://${{ secrets.JAVA_PROJECT_DOMAIN }}"
             echo "Seu app está disponível em: http://${{ secrets.JAVA_PROJECT_DOMAIN }}"
