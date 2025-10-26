@@ -30,9 +30,22 @@ Endpoints públicos para login.
 | **Descrição** | Autentica um usuário e retorna o Token JWT e as chaves dos módulos ativos para sua empresa. | `200 OK`       |
 
 **Requisição (Body - JSON): `LoginRequest`**
-
+```json
+{
+  "email": "admin@empresa.com",
+  "senha": "senha123"
+}
+```
 **Resposta Sucesso (200 OK): `LoginResponse`**
-
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "permissoesModulos": [
+    "COMISSAO_CORE",
+    "RELATORIOS_BASICOS"
+  ]
+}
+```
 ---
 
 ## 2. Acesso Super Admin (`/api/superadmin`)
@@ -51,11 +64,53 @@ Acesso restrito a usuários com `ROLE_SUPER_ADMIN`.
 
 #### `POST /api/superadmin/modulos`
 **Requisição (Body - JSON): `ModuloRequestDTO`**
+```json
+{
+  "nome": "Módulo de Helpdesk",
+  "chave": "HELPDESK_CORE",
+  "status": "PRONTO_PARA_PRODUCAO",
+  "descricaoCurta": "Sistema de tickets básico.",
+  "precoMensal": 99.90,
+  "isPadrao": true
+}
+```
 **Resposta Sucesso (201 Created): `Modulo` (Entidade)**
+```json
+{
+  "id": 1,
+  "nome": "Módulo de Helpdesk",
+  "chave": "HELPDESK_CORE",
+  "status": "PRONTO_PARA_PRODUCAO",
+  "descricaoCurta": "Sistema de tickets básico.",
+  "precoMensal": 99.90,
+  "isPadrao": true
+}
+```
 
 #### `PUT /api/superadmin/modulos/{id}` **(NOVO DETALHE)**
 **Requisição (Body - JSON): `ModuloRequestDTO`**
+```json
+{
+  "nome": "Módulo de Helpdesk Avançado",
+  "chave": "HELPDESK_CORE",
+  "status": "PRONTO_PARA_PRODUCAO",
+  "descricaoCurta": "Sistema de tickets avançado com SLA.",
+  "precoMensal": 149.90,
+  "isPadrao": false
+}
+```
 **Resposta Sucesso (200 OK): `Modulo` (Entidade Atualizada)**
+```json
+{
+  "id": 1,
+  "nome": "Módulo de Helpdesk Avançado",
+  "chave": "HELPDESK_CORE",
+  "status": "PRONTO_PARA_PRODUCAO",
+  "descricaoCurta": "Sistema de tickets avançado com SLA.",
+  "precoMensal": 149.90,
+  "isPadrao": false
+}
+```
 
 ### 2.2. Gerenciamento de Empresas (`/api/superadmin/empresas`)
 
@@ -69,21 +124,114 @@ Acesso restrito a usuários com `ROLE_SUPER_ADMIN`.
 
 #### `POST /api/superadmin/empresas`
 **Requisição (Body - JSON): `EmpresaRequestDTO`**
+```json
+{
+  "nomeFantasia": "Tech Solutions LTDA",
+  "cnpj": "11.222.333/0001-44",
+  "adminNome": "Pedro Admin",
+  "adminEmail": "admin@techsolutions.com",
+  "adminSenha": "senhaforte123"
+}
+```
 **Resposta Sucesso (201 Created): `Empresa` (Entidade)**
+```json
+{
+  "id": 10,
+  "nomeFantasia": "Tech Solutions LTDA",
+  "cnpj": "11.222.333/0001-44",
+  "dataCadastro": "2024-10-25T03:00:00",
+  "modulosAtivos": [
+    {
+      "id": 1,
+      "nome": "Sistema de Comissões",
+      "chave": "COMISSAO_CORE",
+      "status": "PRONTO_PARA_PRODUCAO",
+      "descricaoCurta": "Gerenciamento completo...",
+      "precoMensal": 150.00,
+      "isPadrao": true
+    }
+  ]
+}
+```
 
 #### `PUT /api/superadmin/empresas/{id}` **(NOVO DETALHE)**
 **Requisição (Body - JSON): `EmpresaUpdateRequestDTO`**
+```json
+{
+  "nomeFantasia": "Tech Solutions & Inovação LTDA",
+  "cnpj": "11.222.333/0001-44"
+}
+```
 **Resposta Sucesso (200 OK): `Empresa` (Entidade Atualizada)**
+```json
+{
+  "id": 10,
+  "nomeFantasia": "Tech Solutions & Inovação LTDA",
+  "cnpj": "11.222.333/0001-44",
+  "dataCadastro": "2024-10-25T03:00:00",
+  "modulosAtivos": [ /* ... */ ]
+}
+```
 
 #### `PUT /api/superadmin/empresas/{id}/modulos`
 **Requisição (Body - JSON): `AtualizarModulosEmpresaRequestDTO`**
+```json
+{
+  "moduloIds": [ 1, 3 ]
+}
+```
 **Resposta Sucesso (200 OK): `Empresa` (Entidade Atualizada)**
+```json
+{
+  "id": 10,
+  "nomeFantasia": "Tech Solutions LTDA",
+  "cnpj": "11.222.333/0001-44",
+  "dataCadastro": "2024-10-25T03:00:00",
+  "modulosAtivos": [
+    {
+      "id": 1,
+      "nome": "Sistema de Comissões",
+      "chave": "COMISSAO_CORE",
+       "status": "PRONTO_PARA_PRODUCAO",
+      "descricaoCurta": "Gerenciamento completo...",
+      "precoMensal": 150.00,
+      "isPadrao": true
+    },
+    {
+      "id": 3,
+      "nome": "Relatórios Avançados",
+      "chave": "RELATORIOS_AVANCADOS",
+      "status": "PRONTO_PARA_PRODUCAO",
+      "descricaoCurta": "Geração de relatórios...",
+      "precoMensal": 120.50,
+      "isPadrao": false
+    }
+  ]
+}
+```
 
 ### 2.3. Gerenciamento de Usuários Admin (`/api/superadmin/empresas/{empresaId}/admins`) **(NOVO)**
 
 #### `POST /api/superadmin/empresas/{empresaId}/admins` **(NOVO)**
 **Requisição (Body - JSON): `AdminUsuarioRequestDTO` (Exemplo)**
+```json
+{
+  "nome": "Maria Gerente",
+  "email": "maria.gerente@techsolutions.com",
+  "senha": "outrasenhaforte456"
+}
+```
 **Resposta Sucesso (201 Created): `User` (Entidade do Usuário Criado)**
+```json
+{
+  "id": 502,
+  "nome": "Maria Gerente",
+  "email": "maria.gerente@techsolutions.com",
+  "role": "ROLE_ADMIN",
+  "dataCriacao": "2025-10-25T21:10:00",
+  "empresa": { "id": 10, /* ... */ }
+}
+```
 
 ---
 
@@ -99,6 +247,24 @@ Endpoints públicos relacionados ao catálogo de Módulos.
 | **Permissões**| Nenhuma (Público).                                                               |                |
 
 **Resposta Sucesso (200 OK): `List<ModuloCatalogoDTO>`**
+```json
+[
+  {
+    "id": 1,
+    "nome": "Sistema de Comissões",
+    "chave": "COMISSAO_CORE",
+    "descricaoCurta": "Gerenciamento completo de vendedores, vendas e comissões.",
+    "precoMensal": 150.00
+  },
+  {
+    "id": 2,
+    "nome": "Relatórios Avançados",
+    "chave": "RELATORIOS_AVANCADOS",
+    "descricaoCurta": "Geração de relatórios personalizados e dashboards.",
+    "precoMensal": 120.50
+  }
+]
+```
 
 ---
 
@@ -114,6 +280,16 @@ Endpoints para o `ROLE_ADMIN` obter informações sobre sua própria empresa.
 | **Descrição** | Retorna os detalhes da empresa do usuário ADMIN logado, incluindo a contagem de usuários com `ROLE_ADMIN`. | `200 OK`       |
 
 **Resposta Sucesso (200 OK): `EmpresaDetalhesDTO`**
+```json
+{
+  "id": 10,
+  "nomeFantasia": "Tech Solutions LTDA",
+  "razaoSocial": "Tech Solutions Desenvolvimento de Software LTDA",
+  "cnpj": "11.222.333/0001-44",
+  "dataCadastro": "2024-10-25T03:00:00",
+  "qtdAdmins": 2
+}
+```
 
 ### `GET /api/empresa/meus-modulos`
 
@@ -122,6 +298,28 @@ Endpoints para o `ROLE_ADMIN` obter informações sobre sua própria empresa.
 | **Descrição** | Lista os detalhes de todos os módulos que estão atualmente ativos para a empresa. | `200 OK`       |
 
 **Resposta Sucesso (200 OK): `Set<Modulo>`** (Conjunto de entidades `Modulo` ativas).
+```json
+[
+    {
+      "id": 1,
+      "nome": "Sistema de Comissões",
+      "chave": "COMISSAO_CORE",
+      "status": "PRONTO_PARA_PRODUCAO",
+      "descricaoCurta": "Gerenciamento completo...",
+      "precoMensal": 150.00,
+      "isPadrao": true
+    },
+    {
+      "id": 3,
+      "nome": "Relatórios Avançados",
+      "chave": "RELATORIOS_AVANCADOS",
+      "status": "PRONTO_PARA_PRODUCAO",
+      "descricaoCurta": "Geração de relatórios...",
+      "precoMensal": 120.50,
+      "isPadrao": false
+    }
+]
+```
 
 ---
 
@@ -141,17 +339,100 @@ Acesso restrito a usuários com `ROLE_ADMIN` e módulo `COMISSAO_CORE` ativo.
 
 #### `POST /api/vendedores`
 **Requisição (Body - JSON): `VendedorRequestDTO`**
+```json
+{
+  "nome": "Julia Campos",
+  "email": "julia.campos@empresa.com",
+  "percentualComissao": 7.00
+}
+```
 **Resposta Sucesso (201 Created): `VendedorCriadoResponseDTO`**
+```json
+{
+  "idVendedor": 101,
+  "idUsuario": 501,
+  "nome": "Julia Campos",
+  "email": "julia.campos@empresa.com",
+  "percentualComissao": 7.00,
+  "idEmpresa": 10,
+  "senhaTemporaria": "aBcDeF1234"
+}
+```
 
 #### `PUT /api/vendedores/{id}` **(NOVO DETALHE)**
 **Requisição (Body - JSON): `VendedorUpdateRequestDTO`**
+```json
+{
+  "percentualComissao": 7.50
+}
+```
 **Resposta Sucesso (200 OK): `VendedorResponseDTO`**
+```json
+{
+  "idVendedor": 101,
+  "percentualComissao": 7.50,
+  "qtdVendas": 55,
+  "valorTotalVendas": 25000.00,
+  "nome": "Julia Campos",
+  "email": "julia.campos@empresa.com"
+}
+```
 
 #### `GET /api/vendedores` (Listar Todos)
 **Resposta Sucesso (200 OK): `List<VendedorResponseDTO>`**
+```json
+[
+  {
+    "idVendedor": 101,
+    "percentualComissao": 7.00,
+    "qtdVendas": 55,
+    "valorTotalVendas": 25000.00,
+    "nome": "Julia Campos",
+    "email": "julia.campos@empresa.com"
+  },
+  {
+    "idVendedor": 102,
+    "percentualComissao": 5.50,
+    "qtdVendas": 12,
+    "valorTotalVendas": 8000.50,
+    "nome": "Roberto Silva",
+    "email": "roberto.silva@empresa.com"
+  }
+]
+```
+
+#### `GET /api/vendedores/{id}` (Detalhes)
+**Resposta Sucesso (200 OK): `VendedorResponseDTO`**
+```json
+{
+  "idVendedor": 101,
+  "percentualComissao": 7.00,
+  "qtdVendas": 55,
+  "valorTotalVendas": 25000.00,
+  "nome": "Julia Campos",
+  "email": "julia.campos@empresa.com"
+}
+```
 
 #### `GET /api/vendedores/{id}/detalhes` (Detalhes e Histórico)
 **Resposta Sucesso (200 OK): `VendedorDetalhadoResponseDTO`**
+```json
+{
+  "id": 101,
+  "nome": "Julia Campos",
+  "email": "julia.campos@empresa.com",
+  "percentualComissao": 7.00,
+  "idEmpresa": 10,
+  "dataCadastro": "2023-10-01T10:00:00",
+  "qtdVendas": 55,
+  "valorTotalVendas": 25000.00,
+  "mediaComissao": 150.00,
+  "historicoRendimentos": [
+    { "mesAno": "2024-10", "valorVendido": 8000.00, "valorComissao": 560.00 },
+    { "mesAno": "2024-09", "valorVendido": 12000.00, "valorComissao": 840.00 }
+  ]
+}
+```
 
 ### 5.2. Gerenciamento de Vendas (`/api/vendas`)
 
@@ -162,8 +443,34 @@ Acesso restrito a usuários com `ROLE_ADMIN` e módulo `COMISSAO_CORE` ativo.
 
 #### `POST /api/vendas`
 **Requisição (Body - JSON): `VendaRequestDTO`**
+```json
+{
+  "vendedorId": 101,
+  "valorVenda": 5200.00
+}
+```
 **Resposta Sucesso (201 Created): `Venda` (Entidade)**
-
+```json
+{
+  "id": 5012,
+  "valorVenda": 5200.00,
+  "valorComissaoCalculado": 364.00,
+  "dataVenda": "2024-10-25T03:05:00",
+  "vendedor": {
+    "idVendedor": 101,
+    "nome": "Julia Campos",
+    "email": "julia.campos@empresa.com",
+    "percentualComissao": 7.00
+   },
+  "empresa": {
+    "id": 10,
+    "nomeFantasia": "Tech Solutions LTDA",
+    "cnpj": "11.222.333/0001-44",
+    "dataCadastro": "2024-10-25T03:00:00",
+    "modulosAtivos": []
+  }
+}
+```
 ### 5.3. Dashboard Gerencial (`/api/dashboard`)
 
 #### `GET /api/dashboard/empresa` **(ATUALIZADO)**
@@ -171,6 +478,73 @@ Acesso restrito a usuários com `ROLE_ADMIN` e módulo `COMISSAO_CORE` ativo.
 **Status Sucesso:** `200 OK`.
 
 **Resposta Sucesso (200 OK): `DashboardResponseDTO`**
+```json
+{
+    "totalVendasMes": 55890.50,
+    "totalComissoesMes": 3890.75,
+    "qtdVendasMes": 125,
+    "mediaVendaMes": 447.12,
+    "mediaComissaoMes": 31.13,
+    "rankingVendedores": [
+        {
+            "nomeVendedor": "Julia Campos",
+            "idVendedor": 101,
+            "valorTotal": 15200.00,
+            "qtdVendas": 35
+        },
+        {
+            "nomeVendedor": "Roberto Silva",
+            "idVendedor": 102,
+            "valorTotal": 12500.00,
+            "qtdVendas": 28
+        }
+    ],
+    "maioresVendas": [
+        {
+            "idVenda": 5012,
+            "nomeVendedor": "Roberto Silva",
+            "idVendedor": 102,
+            "valorVenda": 5200.00,
+            "dataVenda": "2024-10-25T10:30:00Z"
+        },
+        {
+            "idVenda": 5005,
+            "nomeVendedor": "Julia Campos",
+            "idVendedor": 101,
+            "valorVenda": 4100.00,
+            "dataVenda": "2024-10-23T14:00:00Z"
+        }
+    ],
+    "ultimasVendas": [
+        {
+            "idVenda": 5015,
+            "nomeVendedor": "Julia Campos",
+            "idVendedor": 101,
+            "valorVenda": 150.00,
+            "dataVenda": "2024-10-25T13:55:00Z"
+        },
+         {
+            "idVenda": 5014,
+            "nomeVendedor": "Ana Souza",
+            "idVendedor": 103,
+            "valorVenda": 450.90,
+            "dataVenda": "2024-10-25T13:40:00Z"
+        }
+    ],
+    "historicoVendasMensal": [
+        {
+            "mesAno": "2024-10",
+            "valorVendido": 55890.50,
+            "valorComissao": 3890.75
+        },
+        {
+            "mesAno": "2024-09",
+            "valorVendido": 62000.00,
+            "valorComissao": 4800.00
+        }
+    ]
+}
+```
 
 ---
 
@@ -185,4 +559,10 @@ Endpoints disponíveis para qualquer usuário autenticado gerenciar sua própria
 **Status Sucesso:** `200 OK` (ou `204 No Content`).
 
 **Requisição (Body - JSON): `AlterarSenhaRequestDTO` (Exemplo)**
+```json
+{
+  "senhaAtual": "senha123",
+  "novaSenha": "novaSenha456"
+}
+```
 **Resposta Sucesso (200 OK ou 204 No Content):** (Sem corpo)
