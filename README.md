@@ -29,6 +29,7 @@ Endpoints públicos para login.
 | :------------ | :---------------------------------------------------------------------------------------------------- | :------------- |
 | **Descrição** | Autentica um usuário e retorna o Token JWT e as chaves dos módulos ativos para sua empresa. | `200 OK`       |
 
+### `POST /api/auth/login`
 **Requisição (Body - JSON): `LoginRequest`**
 ```json
 {
@@ -256,6 +257,7 @@ Endpoints públicos relacionados ao catálogo de Módulos.
 | **Descrição** | Retorna o catálogo público de módulos disponíveis para contratação (status `PRONTO_PARA_PRODUCAO`). | `200 OK`       |
 | **Permissões**| Nenhuma (Público).                                                               |                |
 
+### `GET /api/modulos/catalogo`
 **Resposta Sucesso (200 OK): `List<ModuloCatalogoDTO>`**
 ```json
 [
@@ -289,6 +291,7 @@ Endpoints para o `ROLE_ADMIN` obter informações sobre sua própria empresa.
 | :------------ | :--------------------------------------------------------------------------------------------------------- | :------------- |
 | **Descrição** | Retorna os detalhes da empresa do usuário ADMIN logado, incluindo a contagem de usuários com `ROLE_ADMIN`. | `200 OK`       |
 
+### `GET /api/empresa/me`
 **Resposta Sucesso (200 OK): `EmpresaDetalhesDTO`**
 ```json
 {
@@ -361,7 +364,7 @@ Endpoints para o `ROLE_ADMIN` obter informações sobre sua própria empresa.
   "empresaId": 1
 }
 ```
-### `GET /api/empresa/admins`
+### `GET /api/empresa/admins` (Em desenvolvimento)
 **Resposta Sucesso (200 OK): `List<User>` (Lista de Usuários da Empresa)**
 ```json
 [
@@ -384,7 +387,7 @@ Endpoints para o `ROLE_ADMIN` obter informações sobre sua própria empresa.
 ]
 ```
 
-### `PUT /api/empresa/admins/{id}`
+### `PUT /api/empresa/admins/{id}` (Em desenvolvimento)
 **Requisição (Body - JSON): `AdminUsuarioUpdateRequestDTO`**
 ```json
 {
