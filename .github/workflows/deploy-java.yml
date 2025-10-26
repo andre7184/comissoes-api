@@ -130,9 +130,9 @@ jobs:
             docker compose down --remove-orphans
             
             # NOVO: Remove explicitamente contêineres antigos com o mesmo nome para evitar conflito
-            echo "Removendo contêineres em conflito (se existirem)..."
-            docker rm -f ${{ secrets.JAVA_PROJECT_REPO_NAME }}_db || true
-            docker rm -f ${{ secrets.JAVA_PROJECT_REPO_NAME }}_web || true
+            # echo "Removendo contêineres em conflito (se existirem)..."
+            # docker rm -f ${{ secrets.JAVA_PROJECT_REPO_NAME }}_db || true
+            # docker rm -f ${{ secrets.JAVA_PROJECT_REPO_NAME }}_web || true
               
             echo "Baixando nova imagem..."
             # CORRIGIDO: Removido o 'K' extra
