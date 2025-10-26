@@ -30,7 +30,12 @@ Endpoints públicos para login.
 | **Descrição** | Autentica um usuário e retorna o Token JWT e as chaves dos módulos ativos para sua empresa. | `200 OK`       |
 
 **Requisição (Body - JSON): `LoginRequest`**
-
+```json
+{
+  "email": "admin@empresa.com",
+  "senha": "senha123"
+}
+```
 **Resposta Sucesso (200 OK): `LoginResponse`**
 
 ---
