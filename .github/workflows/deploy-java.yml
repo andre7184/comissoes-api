@@ -3,8 +3,8 @@ name: Deploy Aplicativo Java (comissoes-api)
 on:
   push:
     branches:
-      - main  # Dispara quando houver push na 'main'
-  workflow_dispatch: # Permite disparar manualmente (para seu fluxo Kanban)
+      - main
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -13,25 +13,24 @@ jobs:
     steps:
       - name: 1. Checkout do Código
         uses: actions/checkout@v3
-        # Importante: Se for disparado manualmente, garante que pega o código
-        # da branch que você selecionar (ex: 'develop')
         with:
+          # Garante que ele pega o código da branch selecionada no 'workflow_dispatch' (ex: develop)
           ref: ${{ github.event.ref }}
 
       - name: 2. Login no Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          # CORRIGIDO: Removido o 'K' extra
+          username: ${{ secrets.DOCKERHUB_USERNAME }} 
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: 3. Construir e Enviar Imagem Docker
-        # Esta etapa usa o 'Dockerfile' (Java 21) que você criou na raiz do projeto
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
-          # Usa o secret JAVA_PROJECT_REPO_NAME (ex: 'comissoes-api')
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest
+          # CORRIGIDO: Removido o 'K' extra
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest 
 
       - name: 4. Conectar no Servidor, Configurar Nginx e Fazer Deploy
         uses: appleboy/ssh-action@master
@@ -40,12 +39,12 @@ jobs:
           username: ${{ secrets.SSH_USER }} # 'deployer'
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Define e entra no diretório do projeto no VPS (ex: /home/deployer/comissoes_api)
+            # Define e entra no diretório do projeto no VPS
             PROJECT_DIR="${{ secrets.JAVA_PROJECT_DIR }}"
             mkdir -p $PROJECT_DIR
             cd $PROJECT_DIR
 
-            # --- Cria o docker-compose.yml para o app Java + PostgreSQL ---
+            # --- Cria o docker-compose.yml ---
             cat << EOF > docker-compose.yml
             version: '3.8'
             services:
@@ -58,18 +57,16 @@ jobs:
                   POSTGRES_USER: \${DB_USER}
                   POSTGRES_PASSWORD: \${DB_PASSWORD}
                 volumes:
-                  # Volume nomeado único para este projeto
                   - postgres_data_${{ secrets.JAVA_PROJECT_REPO_NAME }}:/var/lib/postgresql/data
                 networks:
                   - java-net
               
               app_java:
-                image: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest
+                # CORRIGIDO: Removido o 'K' extra
+                image: ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest 
                 container_name: ${{ secrets.JAVA_PROJECT_REPO_NAME }}_web
                 restart: unless-stopped
                 ports:
-                  # Expõe a porta do app (ex: 8081) apenas no localhost (127.0.0.1)
-                  # O Nginx acessará 127.0.0.1:${{ secrets.JAVA_APP_HOST_PORT }}
                   - "127.0.0.1:${{ secrets.JAVA_APP_HOST_PORT }}:${{ secrets.JAVA_APP_INTERNAL_PORT }}"
                 env_file: .env
                 depends_on:
@@ -78,34 +75,28 @@ jobs:
                   - java-net
             
             volumes:
-              # Volume nomeado único
               postgres_data_${{ secrets.JAVA_PROJECT_REPO_NAME }}:
 
             networks:
               java-net:
             EOF
             
-            # --- Cria o arquivo .env com as variáveis do Spring Boot e DB ---
+            # --- Cria o arquivo .env ---
             echo "SPRING_DATASOURCE_URL=jdbc:postgresql://db_java:5432/${{ secrets.DB_NAME }}" > .env
             echo "SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USER }}" >> .env
             echo "SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
             echo "SPRING_JPA_HIBERNATE_DDL_AUTO=update" >> .env
-            
-            # Variáveis para o docker-compose (PostgreSQL)
             echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
             echo "DB_USER=${{ secrets.DB_USER }}" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
 
-            # --- Cria a configuração do Nginx (temporariamente no diretório do projeto) ---
-            # O usuário 'deployer' PRECISARÁ de permissão 'sudo' para mover este arquivo.
+            # --- Cria a configuração do Nginx ---
             cat << EOF > nginx.conf
             server {
                 listen 80;
-                # O domínio do seu app (ex: comissoes.promptweb.com.br)
                 server_name ${{ secrets.JAVA_PROJECT_DOMAIN }};
 
                 location / {
-                    # Aponta para a porta exposta no host (ex: 127.0.0.1:8081)
                     proxy_pass http://127.0.0.1:${{ secrets.JAVA_APP_HOST_PORT }};
                     proxy_set_header Host \$host;
                     proxy_set_header X-Real-IP \$remote_addr;
@@ -115,25 +106,19 @@ jobs:
             }
             EOF
             
-            # --- Bloco de Administração do Servidor (requer sudo) ---
+            # --- Bloco de Administração do Servidor (com caminhos absolutos) ---
             
-            # Define os caminhos dos arquivos de configuração do Nginx
             NGINX_CONF_FILE="/etc/nginx/sites-available/${{ secrets.JAVA_PROJECT_DOMAIN }}"
             NGINX_LINK_FILE="/etc/nginx/sites-enabled/${{ secrets.JAVA_PROJECT_DOMAIN }}"
 
-            # Move o arquivo de configuração para o Nginx (requer sudo)
             echo "Movendo configuração do Nginx..."
-            # O caminho de origem (nginx.conf) é relativo ao $PROJECT_DIR
-            sudo mv nginx.conf $NGINX_CONF_FILE
+            sudo /usr/bin/mv $PROJECT_DIR/nginx.conf $NGINX_CONF_FILE
             
-            # Cria o link simbólico para ativar o site (requer sudo)
             echo "Ativando site no Nginx..."
-            sudo ln -sf $NGINX_CONF_FILE $NGINX_LINK_FILE
+            sudo /usr/bin/ln -sf $NGINX_CONF_FILE $NGINX_LINK_FILE
             
-            # Testa a configuração do Nginx (requer sudo)
             echo "Testando configuração do Nginx..."
-            # Se este comando falhar, o script para graças ao 'set -e' implícito do ssh-action
-            sudo nginx -t
+            sudo /usr/sbin/nginx -t
             if [ \$? -ne 0 ]; then
                 echo "Erro na configuração do Nginx!"
                 exit 1
@@ -141,22 +126,19 @@ jobs:
             
             # --- Executa o Deploy ---
             
-            # Para os contêineres antigos (se existirem)
             echo "Parando contêineres antigos..."
             docker compose down --remove-orphans
             
-            # Baixa a nova imagem
             echo "Baixando nova imagem..."
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest
+            # CORRIGIDO: Removido o 'K' extra
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.JAVA_PROJECT_REPO_NAME }}:latest 
             
-            # Sobe os novos serviços
             echo "Iniciando contêineres..."
             docker compose up -d
 
-            # Espera inteligente para o PostgreSQL ficar pronto
+            # Espera inteligente para o PostgreSQL
             echo "Aguardando o banco de dados (PostgreSQL) ficar pronto..."
             timeout=90
-            # Usa pg_isready para verificar o PostgreSQL dentro do contêiner 'db_java'
             while ! docker compose exec db_java pg_isready -U "${{ secrets.DB_USER }}" -h localhost; do
               sleep 3
               timeout=\$(expr \$timeout - 3)
@@ -168,9 +150,8 @@ jobs:
             done
             echo "✅ Banco de dados está pronto!"
             
-            # Recarrega o Nginx para aplicar as mudanças (requer sudo)
             echo "Recarregando Nginx..."
-            sudo systemctl reload nginx
+            sudo /usr/bin/systemctl reload nginx
             
             echo "✅ Deploy concluído com sucesso!"
             echo "Seu app está disponível em: http://${{ secrets.JAVA_PROJECT_DOMAIN }}"
