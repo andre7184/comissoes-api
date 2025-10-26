@@ -9,7 +9,6 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: 1. Checkout do Código
         uses: actions/checkout@v3
