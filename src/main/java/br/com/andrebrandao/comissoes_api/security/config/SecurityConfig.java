@@ -59,7 +59,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         
         // ** AJUSTE AQUI **: URLs do seu frontend (desenvolvimento e produção)
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "https://comissoesapi.promptweb.com.br")); 
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "https://comissoesweb.promptweb.com.br")); 
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*")); 
