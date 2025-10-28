@@ -152,8 +152,17 @@ jobs:
             echo "Testando configuração do Nginx..."
             # Verificação explícita do código de saída
             if ! sudo /usr/sbin/nginx -t; then
-                echo "Erro na configuração do Nginx! Verifique o output acima."
-                exit 1
+              echo "==================================================="
+              echo "ERRO CRÍTICO NA CONFIGURAÇÃO NGINX. REMOVENDO ARQUIVO."
+              echo "==================================================="
+              echo "Conteúdo do arquivo."
+              echo "#====#====#====#====#====#====#====#"
+              sudo cat "$NGINX_CONF_FILE"
+              echo "#====#====#====#====#====#====#====#"
+              # REMOÇÃO DO ARQUIVO COM ERRO E LINK (Melhoria de Erro)
+              sudo rm -f "$NGINX_LINK_FILE" 
+              sudo rm -f "$NGINX_CONF_FILE" 
+              exit 1; 
             fi
             
             # --- Executa o Deploy ---
