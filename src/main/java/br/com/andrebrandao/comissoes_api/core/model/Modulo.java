@@ -11,6 +11,8 @@ import jakarta.persistence.Table;
 import lombok.Data; // Importa o Lombok
 import java.math.BigDecimal;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * Entidade que representa um Módulo (produto) vendável no SaaS.
  * Controla o catálogo de funcionalidades do sistema.
@@ -49,4 +51,10 @@ public class Modulo {
 
     @Column(columnDefinition = "boolean default false")
     private boolean isPadrao; // "IsPadrao" = é padrão?
+
+    // --- GETTER MANUAL PARA isPadrao COM A ANOTAÇÃO ---
+    @JsonProperty("isPadrao") // <-- ADICIONAR ANOTAÇÃO AQUI
+    public boolean isPadrao() {
+        return isPadrao;
+    }
 }

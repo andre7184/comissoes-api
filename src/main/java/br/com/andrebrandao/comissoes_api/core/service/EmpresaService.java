@@ -1,6 +1,6 @@
 package br.com.andrebrandao.comissoes_api.core.service;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -22,6 +22,7 @@ import br.com.andrebrandao.comissoes_api.security.repository.UserRepository; // 
 import br.com.andrebrandao.comissoes_api.security.service.TenantService;
 import br.com.andrebrandao.comissoes_api.core.dto.AdminUsuarioRequestDTO;
 import br.com.andrebrandao.comissoes_api.core.dto.EmpresaDetalhesDTO;
+import br.com.andrebrandao.comissoes_api.core.dto.EmpresaComAdminsDTO;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -38,8 +39,35 @@ public class EmpresaService {
 
     private final TenantService tenantService;
     
-    public List<Empresa> listarTodas() {
-        return empresaRepository.findAll();
+    /**
+     * Lista todas as Empresas cadastradas, incluindo seus módulos ativos e
+     * a lista de usuários ROLE_ADMIN associados.
+     * Garante o carregamento dos dados LAZY (módulos).
+     *
+     * @return Lista de DTOs EmpresaComAdminsDTO.
+     */
+    @Transactional(readOnly = true) // <-- Adicionar @Transactional para gerenciar a sessão e LAZY loading
+    public List<EmpresaComAdminsDTO> listarTodas() { // <-- TIPO DE RETORNO ALTERADO
+        // 1. Busca todas as entidades Empresa
+        List<Empresa> empresas = empresaRepository.findAll();
+        List<EmpresaComAdminsDTO> dtos = new ArrayList<>();
+
+        // 2. Itera sobre cada empresa para buscar seus admins e carregar módulos
+        for (Empresa empresa : empresas) {
+            // 3. Busca a lista de usuários ROLE_ADMIN para esta empresa
+            List<User> admins = userRepository.findByEmpresaIdAndRole(empresa.getId(), Role.ROLE_ADMIN);
+
+            // 4. Acessa a coleção LAZY de módulos DENTRO da transação para carregá-la
+            // O próprio DTO já faz isso no método fromEntity, mas podemos garantir aqui também (opcional)
+            // empresa.getModulosAtivos().size(); // Força o carregamento
+
+            // 5. Constrói o DTO usando o método de fábrica
+            EmpresaComAdminsDTO dto = EmpresaComAdminsDTO.fromEntity(empresa, admins);
+            dtos.add(dto);
+        }
+
+        // 6. Retorna a lista de DTOs
+        return dtos;
     }
 
     
@@ -66,7 +94,7 @@ public class EmpresaService {
         Empresa novaEmpresa = new Empresa();
         novaEmpresa.setNomeFantasia(dto.getNomeFantasia());
         novaEmpresa.setCnpj(dto.getCnpj());
-        novaEmpresa.setDataCadastro(LocalDateTime.now());
+        novaEmpresa.setRazaoSocial(dto.getRazaoSocial());
         // Salva a empresa primeiro para obter um ID
         Empresa empresaSalva = empresaRepository.save(novaEmpresa);
 
