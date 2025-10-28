@@ -1,6 +1,7 @@
 package br.com.andrebrandao.comissoes_api.security.repository;
 
 import java.util.Optional;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import br.com.andrebrandao.comissoes_api.security.model.Role;
@@ -36,4 +37,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return A contagem de usuários com esse role na empresa.
      */
     Long countByEmpresaIdAndRole(Long empresaId, Role role); // <-- NOVO MÉTODO
+
+    /**
+     * Busca TODOS os Usuários associados a uma Empresa específica E com um Role específico.
+     * Query Mágica: "SELECT u FROM User u WHERE u.empresa.id = ? AND u.role = ?"
+     * @param empresaId O ID da Empresa.
+     * @param role O Role a ser buscado (ex: Role.ROLE_ADMIN).
+     * @return Uma Lista de usuários com esse role na empresa.
+     */
+    List<User> findByEmpresaIdAndRole(Long empresaId, Role role); // <-- NOVO MÉTODO (retorna Lista)
 }

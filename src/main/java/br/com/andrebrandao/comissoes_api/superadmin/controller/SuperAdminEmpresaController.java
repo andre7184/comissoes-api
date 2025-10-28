@@ -22,6 +22,7 @@ import br.com.andrebrandao.comissoes_api.core.service.EmpresaService;
 import br.com.andrebrandao.comissoes_api.core.dto.AdminUsuarioRequestDTO;
 import br.com.andrebrandao.comissoes_api.security.dto.UsuarioResponseDTO; // Importar DTO
 import br.com.andrebrandao.comissoes_api.security.model.User;
+import br.com.andrebrandao.comissoes_api.core.dto.EmpresaComAdminsDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -42,11 +43,21 @@ public class SuperAdminEmpresaController {
         return empresaService.criar(dto);
     }
 
-    @GetMapping
-    public List<Empresa> listarTodasEmpresas() {
-        return empresaService.listarTodas();
+    /**
+     * Lista todas as empresas cadastradas, incluindo módulos ativos e usuários admin.
+     * Mapeado para: GET /api/superadmin/empresas
+     *
+     * @return Lista de DTOs EmpresaComAdminsDTO.
+     */
+    @GetMapping // <-- Este método
+    public List<EmpresaComAdminsDTO> listarTodasEmpresas() { // <-- TIPO DE RETORNO ALTERADO AQUI
+        return empresaService.listarTodas(); // Agora os tipos coincidem
     }
 
+    /**
+     * Busca UMA empresa pelo ID. Este ainda retorna a entidade completa
+     * (pode ser alterado para um DTO no futuro, se necessário).
+     */
     @GetMapping("/{id}")
     public Empresa buscarEmpresaPorId(@PathVariable Long id) {
         return empresaService.buscarPorId(id);

@@ -17,7 +17,9 @@ public class EmpresaRequestDTO {
     @NotBlank(message = "O CNPJ não pode ser vazio.")
     @Pattern(regexp = "^\\d{2}\\.\\d{3}\\.\\d{3}/\\d{4}-\\d{2}$", message = "O formato do CNPJ deve ser XX.XXX.XXX/XXXX-XX")
     private String cnpj;
-
+    
+    @NotBlank(message = "O nome razão social não pode ser vazio.")
+    private String razaoSocial;
     // --- CAMPOS ADICIONADOS (Dados do Admin da Empresa Cliente) ---
     
     @NotBlank(message = "O nome do admin não pode ser vazio.")
