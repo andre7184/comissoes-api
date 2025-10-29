@@ -20,6 +20,7 @@ import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.VendedorR
 import br.com.andrebrandao.comissoes_api.security.service.TenantService; // Do Security
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendaResponseDTO;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorRankingDTO;
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendaUpdateRequestDTO;
 import jakarta.persistence.EntityNotFoundException; // Import Exception
 import lombok.RequiredArgsConstructor;
 
@@ -77,6 +78,7 @@ public class VendaService {
         // 5. Cria a entidade Venda
         Venda novaVenda = Venda.builder()
                 .valorVenda(dto.getValorVenda())
+                .descricaoVenda(dto.getDescricaoVenda())
                 .valorComissaoCalculado(valorComissao) // Comissão calculada
                 .vendedor(vendedor) // Associa ao vendedor encontrado
                 .empresa(empresaRepository.getReferenceById(empresaId)) // Associa à empresa do Admin
@@ -195,5 +197,59 @@ public class VendaService {
                 .ultimasVendas(ultimasVendas)
                 .historicoVendasMensal(historicoVendasMensal)
                 .build();
+    }
+
+    /**
+     * Atualiza o valor e/ou descrição de uma venda existente.
+     * **Recalcula a comissão** com base no novo valor e no percentual atual do vendedor.
+     * Garante que a venda pertença à empresa do Admin logado.
+     *
+     * @param idVenda O ID da venda a ser atualizada.
+     * @param dto O DTO com o novo valorVenda e/ou descricaoVenda.
+     * @return O DTO de resposta da venda atualizada.
+     */
+    @Transactional
+    public VendaResponseDTO atualizarVenda(Long idVenda, VendaUpdateRequestDTO dto) {
+        // 1. Pega o ID da Empresa do ADMIN logado
+        Long empresaId = tenantService.getEmpresaIdDoUsuarioLogado();
+
+        // 2. Busca a Venda, garantindo que ela pertença à empresa logada
+        // Precisamos buscar a Venda e o Vendedor LAZY (se não tiver JOIN FETCH, a transação deve estar aberta)
+        Venda vendaExistente = vendaRepository.findByEmpresaId(empresaId)
+                .stream()
+                .filter(v -> v.getId().equals(idVenda))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Venda não encontrada com o ID: " + idVenda + " para esta empresa."));
+        
+        // 3. Atualiza os campos: valorVenda e descricaoVenda
+        BigDecimal novoValorVenda = dto.getValorVenda();
+        vendaExistente.setValorVenda(novoValorVenda);
+        vendaExistente.setDescricaoVenda(dto.getDescricaoVenda());
+        
+        // 4. Recalcula a Comissão
+        // O Vendedor é LAZY, acessamos aqui dentro da transação:
+        Vendedor vendedor = vendaExistente.getVendedor();
+        if (vendedor == null) {
+            throw new IllegalStateException("Venda não associada a um vendedor válido.");
+        }
+
+        BigDecimal percentualComissao = vendedor.getPercentualComissao();
+        if (percentualComissao == null) {
+            percentualComissao = BigDecimal.ZERO;
+        }
+        
+        // Novo Cálculo
+        BigDecimal novoValorComissao = novoValorVenda
+                .multiply(percentualComissao)
+                .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+
+        vendaExistente.setValorComissaoCalculado(novoValorComissao);
+
+        // 5. Salva (o save é necessário para garantir o flush, embora @Transactional // faça o trabalho)
+        Venda vendaAtualizada = vendaRepository.save(vendaExistente);
+
+        // 6. Retorna o DTO de resposta
+        return VendaResponseDTO.fromEntity(vendaAtualizada);
     }
 }

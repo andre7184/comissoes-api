@@ -19,6 +19,11 @@ public class VendaRequestDTO {
     private Long vendedorId;
 
     /**
+     * A descrição da venda.
+     */
+    private String descricaoVenda;
+
+    /**
      * O valor total da venda realizada.
      */
     @NotNull(message = "O valor da venda não pode ser nulo.")
