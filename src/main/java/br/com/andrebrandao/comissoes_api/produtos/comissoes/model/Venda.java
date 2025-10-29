@@ -46,18 +46,18 @@ public class Venda {
     @Column(nullable = false, updatable = false)
     private LocalDateTime dataVenda;
 
-    // TODO: Adicionar um campo 'status' (ex: PENDENTE, PAGO) no futuro
-
     // --- LIGAÇÕES ---
 
     @ManyToOne(fetch = FetchType.LAZY) // 3. Muitas Vendas pertencem a UM Vendedor
-    @JoinColumn(name = "vendedor_id", nullable = false)
+    @JoinColumn(name = "vendedor_id", nullable = false) //
     @JsonIgnore // <-- ADICIONADO: Ignora na serialização para resolver o erro LAZY.
     private Vendedor vendedor;
 
+    @Column(nullable = true) // 6. Permite nulo inicialmente
+    private String descricaoVenda;
+
     @ManyToOne(fetch = FetchType.LAZY) // 4. Muitas Vendas pertencem a UMA Empresa
-    @JoinColumn(name = "empresa_id", nullable = false) // 5. Redundante, mas ESSENCIAL
-                                                      // para Multi-Tenancy
+    @JoinColumn(name = "empresa_id", nullable = false) // 5. Redundante, mas ESSENCIAL | para Multi-Tenancy
     @JsonIgnore // <-- ADICIONADO: Ignora na serialização para resolver o erro LAZY.
     private Empresa empresa;
 

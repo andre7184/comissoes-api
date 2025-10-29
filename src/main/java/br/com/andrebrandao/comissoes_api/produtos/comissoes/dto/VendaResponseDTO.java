@@ -14,6 +14,7 @@ public class VendaResponseDTO {
 
     private Long id;
     private BigDecimal valorVenda;
+    private String descricaoVenda;
     private BigDecimal valorComissaoCalculado;
     private LocalDateTime dataVenda;
     private VendedorSimplesDTO vendedor;
@@ -23,6 +24,7 @@ public class VendaResponseDTO {
         return VendaResponseDTO.builder()
             .id(venda.getId())
             .valorVenda(venda.getValorVenda())
+            .descricaoVenda(venda.getDescricaoVenda())
             .valorComissaoCalculado(venda.getValorComissaoCalculado())
             .dataVenda(venda.getDataVenda())
             .vendedor(VendedorSimplesDTO.fromEntity(venda.getVendedor()))

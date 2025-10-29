@@ -11,11 +11,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendaRequestDTO;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Venda;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.service.VendaService;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendaResponseDTO;
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendaUpdateRequestDTO;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -49,14 +52,27 @@ public class VendaController {
     }
 
     /**
-     * Endpoint para LISTAR TODAS as vendas da empresa do ADMIN logado.
-     * Mapeado para: GET /api/vendas
+     * Endpoint para ATUALIZAR uma venda existente.
+     * Mapeado para: PUT /api/vendas/{id}
      *
-     * @return Uma lista de todas as vendas da empresa.
+     * @param id O ID da venda a ser atualizada.
+     * @param dto O DTO com os dados de atualização.
+     * @return O DTO VendaResponseDTO da venda atualizada.
      */
-    @GetMapping
-    public List<VendaResponseDTO> listarVendas() { // ASSINATURA ALTERADA
-        return vendaService.listar();
+    @PutMapping("/{id}") // <-- NOVO ENDPOINT
+    public VendaResponseDTO atualizarVenda(
+        @PathVariable("id") Long id, 
+        @Valid @RequestBody VendaUpdateRequestDTO dto) {
+        
+        return vendaService.atualizarVenda(id, dto);
     }
 
+    /**
+     * Endpoint para LISTAR TODAS as vendas da empresa do ADMIN logado.
+     * Mapeado para: GET /api/vendas
+     */
+    @GetMapping
+    public List<VendaResponseDTO> listarVendas() {
+        return vendaService.listar();
+    }
 }
