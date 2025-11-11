@@ -1,6 +1,7 @@
 package br.com.andrebrandao.comissoes_api.produtos.comissoes.repository;
 
 import java.util.List; // 1. Importar List
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -111,4 +112,17 @@ public interface VendaRepository extends JpaRepository<Venda, Long> {
            "    mesAno DESC",
            nativeQuery = true)
     List<Object[]> findHistoricoVendasMensal(Long empresaId);
+
+    /**
+     * 2. NOVO MÉTODO:
+     * Busca uma Venda específica pelo seu ID *E* pelo ID da Empresa.
+     * Garante que um admin não possa gerenciar uma venda de outra empresa.
+     * Query Mágica: "SELECT * FROM venda WHERE empresa_id = ? AND id = ?"
+     *
+     * @param empresaId O ID da Empresa.
+     * @param id        O ID da Venda.
+     * @return um Optional contendo a Venda (se encontrada para aquela empresa).
+     */
+    Optional<Venda> findByEmpresaIdAndId(Long empresaId, Long id);
+
 }

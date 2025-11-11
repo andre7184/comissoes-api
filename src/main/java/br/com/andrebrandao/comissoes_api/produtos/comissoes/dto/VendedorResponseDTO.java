@@ -1,8 +1,8 @@
 package br.com.andrebrandao.comissoes_api.produtos.comissoes.dto;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.stream.Collectors;
+// import java.util.List;
+// import java.util.stream.Collectors;
 
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Vendedor;
 import lombok.AllArgsConstructor;

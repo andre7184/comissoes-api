@@ -14,9 +14,13 @@ import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.HistoricoRendime
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendaDetalheDTO;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendaRequestDTO;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Venda;
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.VendaStatus;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Vendedor;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.VendaRepository;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.VendedorRepository;
+// Adicione estas duas linhas na sua seção de imports
+import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendaVendedorRequestDTO;
+import br.com.andrebrandao.comissoes_api.security.model.User;
 import br.com.andrebrandao.comissoes_api.security.service.TenantService; // Do Security
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendaResponseDTO;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.VendedorRankingDTO;
@@ -76,16 +80,15 @@ public class VendaService {
                                                                          // arredondamento padrão
 
         // 5. Cria a entidade Venda
+        // --- MUDANÇA AQUI ---
         Venda novaVenda = Venda.builder()
                 .valorVenda(dto.getValorVenda())
-                .descricaoVenda(dto.getDescricaoVenda())
-                .valorComissaoCalculado(valorComissao) // Comissão calculada
-                .vendedor(vendedor) // Associa ao vendedor encontrado
-                .empresa(empresaRepository.getReferenceById(empresaId)) // Associa à empresa do Admin
-                // A dataVenda será preenchida automaticamente pelo @CreationTimestamp
+                .valorComissaoCalculado(valorComissao)
+                .vendedor(vendedor)
+                .empresa(empresaRepository.getReferenceById(empresaId))
+                .status(VendaStatus.CONFIRMADA) // 2. Define o status como CONFIRMADA
                 .build();
 
-        // 6. Salva a nova Venda no banco e a retorna
         return vendaRepository.save(novaVenda);
     }
 
@@ -251,5 +254,140 @@ public class VendaService {
 
         // 6. Retorna o DTO de resposta
         return VendaResponseDTO.fromEntity(vendaAtualizada);
+    }
+
+    // ========================================================================
+    // MÉTODOS PARA O VENDEDOR (ROLE_VENDEDOR)
+    // ========================================================================
+
+    /**
+     * Lança uma nova Venda no sistema para o *próprio vendedor logado*.
+     * A Venda é criada com o status 'PENDENTE' para aprovação do Admin.
+     *
+     * @param dto O DTO com os dados da venda (apenas valorVenda).
+     * @return A entidade Venda que foi salva (com status PENDENTE).
+     * @throws EntityNotFoundException se o usuário logado não for um vendedor.
+     */
+    @Transactional
+    public Venda lancarPeloVendedor(VendaVendedorRequestDTO dto) {
+
+        // 1. Pega o *usuário* logado (pelo Token JWT)
+        User usuarioLogado = tenantService.getUsuarioLogado();
+        Long empresaId = usuarioLogado.getEmpresa().getId();
+
+        // 2. Encontra o Vendedor associado a esse usuário
+        //    (Usa o método que criamos no VendedorRepository)
+        Vendedor vendedor = vendedorRepository.findByUsuarioId(usuarioLogado.getId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Nenhum perfil de vendedor encontrado para o usuário logado."));
+
+        // 3. Pega o percentual de comissão deste vendedor
+        BigDecimal percentualComissao = vendedor.getPercentualComissao();
+        if (percentualComissao == null) {
+            percentualComissao = BigDecimal.ZERO;
+        }
+
+        // 4. Calcula o valor da comissão
+        BigDecimal valorComissao = dto.getValorVenda()
+                .multiply(percentualComissao)
+                .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+
+        // 5. Cria a entidade Venda
+        Venda novaVenda = Venda.builder()
+                .valorVenda(dto.getValorVenda())
+                .valorComissaoCalculado(valorComissao)
+                .vendedor(vendedor) // Associa ao vendedor logado
+                .empresa(empresaRepository.getReferenceById(empresaId)) // Associa à empresa
+                .status(VendaStatus.PENDENTE) // 6. Venda do Vendedor é PENDENTE
+                .build();
+
+        return vendaRepository.save(novaVenda);
+    }
+
+    /**
+     * Lista todas as Vendas *apenas* do Vendedor logado.
+     *
+     * @return Lista de entidades Venda.
+     * @throws EntityNotFoundException se o usuário logado não for um vendedor.
+     */
+    public List<Venda> listarMinhasVendas() {
+        
+        // 1. Pega o usuário logado
+        User usuarioLogado = tenantService.getUsuarioLogado();
+
+        // 2. Encontra o Vendedor associado
+        Vendedor vendedor = vendedorRepository.findByUsuarioId(usuarioLogado.getId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Nenhum perfil de vendedor encontrado para o usuário logado."));
+        
+        // 3. Usa o método do repositório para buscar vendas APENAS desse vendedor
+        return vendaRepository.findByVendedorId(vendedor.getId());
+    }
+
+    // ========================================================================
+    // MÉTODOS DE GERENCIAMENTO (PARA O ADMIN)
+    // ========================================================================
+
+    /**
+     * Altera o status de uma Venda (que deve ser 'PENDENTE') para 'CONFIRMADA'.
+     * Apenas o Admin da empresa dona da venda pode fazer isso.
+     *
+     * @param vendaId O ID da Venda a ser aprovada.
+     * @return A Venda atualizada com o status CONFIRMADA.
+     * @throws EntityNotFoundException se a venda não for encontrada.
+     * @throws IllegalStateException se a venda não estiver PENDENTE.
+     */
+    @Transactional
+    public Venda aprovarVenda(Long vendaId) {
+        Long empresaId = tenantService.getEmpresaIdDoUsuarioLogado();
+
+        // 1. Busca a venda usando o método seguro que acabamos de criar no
+        // repositório
+        Venda venda = vendaRepository.findByEmpresaIdAndId(empresaId, vendaId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Venda não encontrada com o ID: " + vendaId + " para esta empresa."));
+
+        // 2. Regra de Negócio: Só podemos aprovar vendas PENDENTES
+        if (venda.getStatus() != VendaStatus.PENDENTE) {
+            throw new IllegalStateException(
+                    "Apenas vendas com status PENDENTE podem ser aprovadas. Status atual: " + venda.getStatus());
+        }
+
+        // 3. Atualiza o status
+        venda.setStatus(VendaStatus.CONFIRMADA);
+
+        // 4. Salva a Venda (JPA faz o UPDATE)
+        return vendaRepository.save(venda);
+    }
+
+    /**
+     * Altera o status de uma Venda para 'CANCELADA'.
+     * Apenas o Admin da empresa dona da venda pode fazer isso.
+     * (Permite cancelar vendas PENDENTES ou CONFIRMADAS - ex: devolução)
+     *
+     * @param vendaId O ID da Venda a ser cancelada.
+     * @return A Venda atualizada com o status CANCELADA.
+     * @throws EntityNotFoundException se a venda não for encontrada.
+     */
+    @Transactional
+    public Venda cancelarVenda(Long vendaId) {
+        Long empresaId = tenantService.getEmpresaIdDoUsuarioLogado();
+
+        // 1. Busca a venda usando o método seguro
+        Venda venda = vendaRepository.findByEmpresaIdAndId(empresaId, vendaId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Venda não encontrada com o ID: " + vendaId + " para esta empresa."));
+
+        // 2. Regra de Negócio (Opcional): Não podemos cancelar algo já
+        // cancelado
+        if (venda.getStatus() == VendaStatus.CANCELADA) {
+            throw new IllegalStateException("Esta venda já está cancelada.");
+        }
+
+        // 3. Atualiza o status
+        venda.setStatus(VendaStatus.CANCELADA);
+
+        // 4. Salva a Venda
+        return vendaRepository.save(venda);
     }
 }

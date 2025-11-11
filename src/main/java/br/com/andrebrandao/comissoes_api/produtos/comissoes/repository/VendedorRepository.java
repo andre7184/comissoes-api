@@ -4,7 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import br.com.andrebrandao.comissoes_api.produtos.comissoes.dto.HistoricoRendimentoDTO;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.model.Vendedor;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.projection.HistoricoRendimentoProjection;
 import br.com.andrebrandao.comissoes_api.produtos.comissoes.repository.projection.VendedorComVendasProjection; // NOVO IMPORT
@@ -55,4 +54,15 @@ public interface VendedorRepository extends JpaRepository<Vendedor, Long> {
            "    mesAno DESC",
            nativeQuery = true) // <--- ATENÇÃO: AGORA É SQL PURO
     List<HistoricoRendimentoProjection> findHistoricoRendimentosMensais(Long vendedorId);
+
+    /**
+     * 2. NOVO MÉTODO:
+     * Busca um Vendedor específico pelo ID do seu User (usuário) associado.
+     * Usado pelo Portal do Vendedor para encontrar "quem" é o vendedor logado.
+     * Query Mágica: "SELECT * FROM vendedor WHERE user_id = ?"
+     *
+     * @param usuarioId O ID do User logado.
+     * @return um Optional contendo o Vendedor associado àquele User.
+     */
+    Optional<Vendedor> findByUsuarioId(Long usuarioId);
 }

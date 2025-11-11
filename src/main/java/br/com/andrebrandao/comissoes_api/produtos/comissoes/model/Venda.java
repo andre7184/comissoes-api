@@ -7,6 +7,8 @@ import br.com.andrebrandao.comissoes_api.core.model.Empresa; // 1. Importa do M�
 import com.fasterxml.jackson.annotation.JsonIgnore; // NOVO IMPORT
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -46,6 +48,14 @@ public class Venda {
     @Column(nullable = false, updatable = false)
     private LocalDateTime dataVenda;
 
+    // --- CAMPO ADICIONADO ---
+    /**
+     * Define o status atual da venda (Pendente, Confirmada, Cancelada).
+     */
+    @Enumerated(EnumType.STRING) // 3. Diz ao JPA para salvar o *texto* do Enum (ex: "PENDENTE")
+    @Column(nullable = false) // 4. Garante que uma venda NUNCA seja salva sem um status
+    private VendaStatus status;
+
     // --- LIGAÇÕES ---
 
     @ManyToOne(fetch = FetchType.LAZY) // 3. Muitas Vendas pertencem a UM Vendedor
@@ -60,5 +70,6 @@ public class Venda {
     @JoinColumn(name = "empresa_id", nullable = false) // 5. Redundante, mas ESSENCIAL | para Multi-Tenancy
     @JsonIgnore // <-- ADICIONADO: Ignora na serialização para resolver o erro LAZY.
     private Empresa empresa;
+    
 
 }
