@@ -75,4 +75,33 @@ public class VendaController {
     public List<VendaResponseDTO> listarVendas() {
         return vendaService.listar();
     }
+
+    // ========================================================================
+    // MÉTODOS DE GERENCIAMENTO (APROVAR/CANCELAR)
+    // ========================================================================
+
+    /**
+     * Endpoint para o ADMIN APROVAR uma venda PENDENTE.
+     * Mapeado para: PUT /api/vendas/{id}/aprovar
+     *
+     * @param id O ID da Venda (vindo da URL) a ser aprovada.
+     * @return A Venda atualizada com o status CONFIRMADA.
+     */
+    @PutMapping("/{id}/aprovar") // 3. MÉTODO NOVO (Aprovar)
+    public Venda aprovarVenda(@PathVariable Long id) {
+        // 4. @PathVariable pega o "id" da URL
+        return vendaService.aprovarVenda(id);
+    }
+
+    /**
+     * Endpoint para o ADMIN CANCELAR uma venda (Pendente ou Confirmada).
+     * Mapeado para: PUT /api/vendas/{id}/cancelar
+     *
+     * @param id O ID da Venda (vindo da URL) a ser cancelada.
+     * @return A Venda atualizada com o status CANCELADA.
+     */
+    @PutMapping("/{id}/cancelar") // 5. MÉTODO NOVO (Cancelar)
+    public Venda cancelarVenda(@PathVariable Long id) {
+        return vendaService.cancelarVenda(id);
+    }
 }
